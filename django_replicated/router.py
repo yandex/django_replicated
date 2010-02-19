@@ -24,7 +24,6 @@ class ReplicationRouter(object):
         Switches router into a new state. Requires a paired call
         to 'revert' for reverting to previous state.
         '''
-        print state
         if not self._state_change_enabled:
             state = self.state()
         self.state_stack.append(state)
