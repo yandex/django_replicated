@@ -136,28 +136,3 @@ You can disable mode switching for such cases:
     utils.disable_state_change()
 
 (There's also a similar `enalble_state_change()` function.)
-
-
-### Statistics
-
-In debug mode the backend adds another parameter to the standard query
-statistics — "db". It can have values "master" and "slave".
-
-    from django.db import connection
-    print connection.queries[-1]['db']
-
-This is useful during development if you actually have a single database
-to see where you queries would go in production environment.
-
-
-## CONTACTS
-
-Version: 1.4.1
-URL:     http://softwaremaniacs.org/soft/mysql_replicated/en/
-Author:  Ivan Sagalaev (isagalaev@yandex-team.ru)
-Copyright (c) Yandex (http://yandex.com), 2008
-
-Contributor(s):
-
-
-For the license terms see LICENSE file.
