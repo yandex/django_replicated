@@ -19,9 +19,14 @@ class ReplicationMiddleware:
     def process_request(self, request):
         state = request.method in ['GET', 'HEAD'] and 'slave' or 'master'
         state = utils.check_state_override(request, state)
-        utils._use_state(state)
+        router = utils._use_state(state)
+        if router:
+            # Set an attribute on the request to signal process_response that
+            # it should indeed call 'revert'
+            request._replication_middleware_state = router.state()
 
     def process_response(self, request, response):
         utils.handle_updated_redirect(request, response)
-        utils._revert()
+        if hasattr(request, '_replication_middleware_state'):
+            utils._revert()
         return response
