@@ -18,9 +18,11 @@ Usage:
         # same with slave connection
 '''
 import utils
+from functools import wraps
 
 def _use_state(state):
     def decorator(func):
+        @wraps(func)
         def wrapper(request, *args, **kwargs):
             current_state = utils.check_state_override(request, state)
             utils._use_state(current_state)
