@@ -37,6 +37,15 @@ SQL operations.
 
         DATABASE_ROUTERS = ['django_replicated.ReplicationRouter']
 
+5.  Teach django_replicated check slave databases and use master if all slave databases are died
+
+        DATABASE_CHECK_SLAVES = True
+        DATABASE_USE_MASTER = True
+
+    Settings by default:
+
+        DATABASE_CHECK_SLAVES = True
+        DATABASE_USE_MASTER = False
 
 ## USAGE
 

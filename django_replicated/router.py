@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
 import random
 
-from django.db.utils import DEFAULT_DB_ALIAS
+from django.db.utils import DEFAULT_DB_ALIAS, load_backend
 from django.conf import settings
+from django.db import connections
 
 
 class ReplicationRouter(object):
@@ -43,4 +44,24 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
-        return random.choice(slaves)
+
+        check_slaves = getattr(settings, 'DATABASE_CHECK_SLAVES', True)
+        use_master = getattr(settings, 'DATABASE_USE_MASTER', False)
+
+        if check_slaves:
+            random.shuffle(slaves)
+            for slave in slaves:
+                connection = connections[slave]
+                backend = load_backend(connection.settings_dict['ENGINE'])
+                try:
+                    cur = connection.cursor()
+                    return slave
+                except backend.DatabaseError, e:
+                    continue
+            else:
+                if use_master:
+                    return self.db_for_write(model, **hints)
+                else:
+                    return DEFAULT_DB_ALIAS
+        else:
+            return random.choice(slaves)
