@@ -1,8 +1,20 @@
 # -*- coding:utf-8 -*-
 import random
 
+from django.db import connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.conf import settings
+
+
+def is_alive(db):
+    try:
+        if db.connection is not None and hasattr(db.connection, 'ping'):
+            db.connection.ping()
+        else:
+            db.cursor()
+        return True
+    except StandardError:
+        return False
 
 
 class ReplicationRouter(object):
@@ -43,4 +55,9 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
-        return random.choice(slaves)
+        random.shuffle(slaves)
+        for slave in slaves:
+            if is_alive(connections[slave]):
+                return slave
+        else:
+            return DEFAULT_DB_ALIAS
