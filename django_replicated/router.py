@@ -1,8 +1,6 @@
 # -*- coding:utf-8 -*-
 import random
 
-from django.db import connections
-from django.db.utils import DEFAULT_DB_ALIAS
 from django.conf import settings
 
 
@@ -19,6 +17,10 @@ def is_alive(db):
 
 class ReplicationRouter(object):
     def __init__(self):
+        from django.db import connections
+        from django.db.utils import DEFAULT_DB_ALIAS
+        self.connections = connections
+        self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.state_stack = ['master']
         self._state_change_enabled = True
 
@@ -49,15 +51,16 @@ class ReplicationRouter(object):
         self.state_stack.pop()
 
     def db_for_write(self, model, **hints):
-        return DEFAULT_DB_ALIAS
+        return self.DEFAULT_DB_ALIAS
 
     def db_for_read(self, model, **hints):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
-        slaves = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
+        slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
         random.shuffle(slaves)
         for slave in slaves:
-            if is_alive(connections[slave]):
+            if is_alive(self.connections[slave]):
                 return slave
         else:
-            return DEFAULT_DB_ALIAS
+            return self.DEFAULT_DB_ALIAS
+
