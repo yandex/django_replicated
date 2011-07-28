@@ -37,15 +37,12 @@ SQL operations.
 
         DATABASE_ROUTERS = ['django_replicated.ReplicationRouter']
 
-5.  Teach django_replicated check slave databases and use master if all slave databases are died
+5.  Configure downtime of database
 
-        DATABASE_CHECK_SLAVES = True
-        DATABASE_USE_MASTER = True
+        DATABASE_DOWNTIME = 20
 
-    Settings by default:
+    The default downtime value is 60 seconds.
 
-        DATABASE_CHECK_SLAVES = True
-        DATABASE_USE_MASTER = False
 
 ## USAGE
 

@@ -1,15 +1,31 @@
 # -*- coding:utf-8 -*-
 import random
+from datetime import datetime
 
-from django.db.utils import DEFAULT_DB_ALIAS, load_backend
 from django.conf import settings
-from django.db import connections
+
+
+def is_alive(db):
+    try:
+        if db.connection is not None and hasattr(db.connection, 'ping'):
+            db.connection.ping()
+        else:
+            db.cursor()
+        return True
+    except StandardError:
+        return False
 
 
 class ReplicationRouter(object):
+
     def __init__(self):
+        from django.db import connections
+        from django.db.utils import DEFAULT_DB_ALIAS
+        self.connections = connections
+        self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.state_stack = ['master']
         self._state_change_enabled = True
+        self.db_status = {}
 
     def set_state_change(self, enabled):
         self._state_change_enabled = enabled
@@ -38,30 +54,27 @@ class ReplicationRouter(object):
         self.state_stack.pop()
 
     def db_for_write(self, model, **hints):
-        return DEFAULT_DB_ALIAS
+        return self.DEFAULT_DB_ALIAS
 
     def db_for_read(self, model, **hints):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
-        slaves = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
+        slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
+        down_time = getattr(settings, 'DATABASE_DOWNTIME', 60)
+        random.shuffle(slaves)
+        for slave in slaves:
+            status = self.db_status.get(slave, None)
+            if status:
+                real_down_time = (datetime.now() - status).seconds
 
-        check_slaves = getattr(settings, 'DATABASE_CHECK_SLAVES', True)
-        use_master = getattr(settings, 'DATABASE_USE_MASTER', False)
-
-        if check_slaves:
-            random.shuffle(slaves)
-            for slave in slaves:
-                connection = connections[slave]
-                backend = load_backend(connection.settings_dict['ENGINE'])
-                try:
-                    cur = connection.cursor()
-                    return slave
-                except backend.DatabaseError, e:
+                if real_down_time < down_time:
                     continue
+
+            if is_alive(self.connections[slave]):
+                self.db_status[slave] = None
+                return slave
             else:
-                if use_master:
-                    return self.db_for_write(model, **hints)
-                else:
-                    return DEFAULT_DB_ALIAS
+                self.db_status[slave] = datetime.now()
+
         else:
-            return random.choice(slaves)
+            return self.DEFAULT_DB_ALIAS
