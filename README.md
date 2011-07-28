@@ -37,6 +37,13 @@ SQL operations.
 
         DATABASE_ROUTERS = ['django_replicated.ReplicationRouter']
 
+5.  Configure downtime of database
+
+        DATABASE_DOWNTIME = 20
+
+    The default downtime value is 60 seconds.
+
+
 
 ## USAGE
 

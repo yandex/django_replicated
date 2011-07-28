@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import random
+from datetime import datetime
 
 from django.conf import settings
 
@@ -16,6 +17,7 @@ def is_alive(db):
 
 
 class ReplicationRouter(object):
+
     def __init__(self):
         from django.db import connections
         from django.db.utils import DEFAULT_DB_ALIAS
@@ -23,6 +25,7 @@ class ReplicationRouter(object):
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.state_stack = ['master']
         self._state_change_enabled = True
+        self.db_status = {}
 
     def set_state_change(self, enabled):
         self._state_change_enabled = enabled
@@ -57,10 +60,22 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
+        down_time = getattr(settings, 'DATABASE_DOWNTIME', 60)
+
         random.shuffle(slaves)
         for slave in slaves:
+            status = self.db_status.get(slave, None)
+            if status:
+                real_down_time = (datetime.now() - status).seconds
+
+                if real_down_time < down_time:
+                    continue
+
             if is_alive(self.connections[slave]):
+                self.db_status[slave] = None
                 return slave
+            else:
+                self.db_status[slave] = datetime.now()
+
         else:
             return self.DEFAULT_DB_ALIAS
-
