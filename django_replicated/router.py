@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 
@@ -60,7 +60,7 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
-        downtime = datetime(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
+        downtime = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
         random.shuffle(slaves)
         for slave in slaves:
             status = self.db_status.get(slave, None)
