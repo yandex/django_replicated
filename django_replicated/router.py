@@ -60,14 +60,14 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
-        down_time = getattr(settings, 'DATABASE_DOWNTIME', 60)
+        downtime = datetime(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
         random.shuffle(slaves)
         for slave in slaves:
             status = self.db_status.get(slave, None)
             if status:
-                real_down_time = (datetime.now() - status).seconds
+                real_downtime = datetime.now() - status
 
-                if real_down_time < down_time:
+                if real_downtime < downtime:
                     continue
 
             if is_alive(self.connections[slave]):
