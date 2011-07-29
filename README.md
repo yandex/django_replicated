@@ -37,7 +37,8 @@ SQL operations.
 
         DATABASE_ROUTERS = ['django_replicated.ReplicationRouter']
 
-5.  Configure downtime of database
+5.  Configure timeout to exclude a database from the available list after an
+    unsuccessful ping:
 
         DATABASE_DOWNTIME = 20
 
