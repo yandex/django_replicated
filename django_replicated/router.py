@@ -5,17 +5,6 @@ from datetime import datetime, timedelta
 from django.conf import settings
 
 
-def is_alive(db):
-    try:
-        if db.connection is not None and hasattr(db.connection, 'ping'):
-            db.connection.ping()
-        else:
-            db.cursor()
-        return True
-    except StandardError:
-        return False
-
-
 class ReplicationRouter(object):
 
     def __init__(self):
@@ -25,7 +14,26 @@ class ReplicationRouter(object):
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.state_stack = ['master']
         self._state_change_enabled = True
-        self.db_status = {}
+        self.downtime = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
+        self.dead_slaves = {}
+
+    def is_alive(self, slave):
+        death_time = self.dead_slaves.get(slave)
+        if death_time:
+            if death_time + self.downtime > datetime.now():
+                return False
+            else:
+                del self.dead_slaves[slave]
+        db = self.connections[slave]
+        try:
+            if db.connection is not None and hasattr(db.connection, 'ping'):
+                db.connection.ping()
+            else:
+                db.cursor()
+            return True
+        except StandardError:
+            self.dead_slaves[slave] = datetime.now()
+            return False
 
     def set_state_change(self, enabled):
         self._state_change_enabled = enabled
@@ -60,21 +68,9 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
         slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
-        downtime = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
         random.shuffle(slaves)
         for slave in slaves:
-            status = self.db_status.get(slave, None)
-            if status:
-                real_downtime = datetime.now() - status
-
-                if real_downtime < downtime:
-                    continue
-
-            if is_alive(self.connections[slave]):
-                self.db_status[slave] = None
+            if self.is_alive(slave):
                 return slave
-            else:
-                self.db_status[slave] = datetime.now()
-
         else:
             return self.DEFAULT_DB_ALIAS
