@@ -1,16 +1,41 @@
 from django import db
+from django.conf import settings
+from django.core import urlresolvers
+
+
+def _get_func_import_path(func):
+    '''
+    Taken from django.core.urlsolvers
+    '''
+    if not hasattr(func, '__name__'):
+        # An instance of a callable class
+        return '.'.join([func.__class__.__module__, func.__class__.__name__])
+    else:
+        # A function
+        return '.'.join([func.__module__, func.__name__])
+
 
 def check_state_override(request, state):
     '''
-    Used to check if a web request should use a master
-    database even if it can use slave one. This override
-    happens for GET requests that happen upon redirects sent
-    after successful write operations to show the updated state
-    of a page.
+    Used to check if a web request should use a master or slave
+    database besides default choice.
     '''
     if request.COOKIES.get('just_updated') == 'true':
         return 'master'
+
+    overrides = getattr(settings, 'REPLICATED_VIEWS_OVERRIDES', [])
+
+    if overrides:
+        match = urlresolvers.resolve(request.path_info)
+        import_path = _get_func_import_path(match.func)
+
+        for lookup_view, forced_state in overrides.iteritems():
+            if match.url_name == lookup_view or import_path == lookup_view:
+                state = forced_state
+                break
+
     return state
+
 
 def handle_updated_redirect(request, response):
     '''
