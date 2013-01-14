@@ -133,7 +133,8 @@ In some cases it might be necessary to override how the middleware chooses
 a target database based on the HTTP request method. For example you might want to
 route certain POST requests to a slave if you know that the request handler
 doesn't do any writes. The settings variable `REPLICATED_VIEWS_OVERRIDES` holds
-the mapping of view names (urlpatterns names) or view import paths to database:
+the mapping of view names (urlpatterns names) or view import paths to database
+names:
 
     REPLICATED_VIEWS_OVERRIDES = {
         'api-store-event': 'slave',
