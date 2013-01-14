@@ -27,6 +27,7 @@ class ReplicationRouter(object):
 
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.DOWNTIME = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
+        self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
 
         self._context = {}
 
@@ -38,7 +39,8 @@ class ReplicationRouter(object):
             self._context[id_] = odict(
                 state_stack=['master'],
                 dead_slaves={},
-                state_change_enabled=True
+                state_change_enabled=True,
+                chosen={}
             )
 
         return self._context[id_]
@@ -87,16 +89,31 @@ class ReplicationRouter(object):
         '''
         self.context.state_stack.pop()
 
+        if len(self.context.state_stack) == 1:
+            self.context.chosen = {}
+
     def db_for_write(self, model, **hints):
+        self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
+
         return self.DEFAULT_DB_ALIAS
 
     def db_for_read(self, model, **hints):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
-        slaves = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
+
+        if self.state() in self.context.chosen:
+            return self.context.chosen[self.state()]
+
+        slaves = self.SLAVES[:]
         random.shuffle(slaves)
+
         for slave in slaves:
             if self.is_alive(slave):
-                return slave
+                chosen = slave
+                break
         else:
-            return self.DEFAULT_DB_ALIAS
+            chosen = self.DEFAULT_DB_ALIAS
+
+        self.context.chosen[self.state()] = chosen
+
+        return chosen
