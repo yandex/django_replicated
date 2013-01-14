@@ -1,8 +1,20 @@
 # -*- coding:utf-8 -*-
 import random
 from datetime import datetime, timedelta
+import thread
 
 from django.conf import settings
+
+
+class odict(dict):
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 class ReplicationRouter(object):
@@ -10,20 +22,34 @@ class ReplicationRouter(object):
     def __init__(self):
         from django.db import connections
         from django.db.utils import DEFAULT_DB_ALIAS
+
         self.connections = connections
+
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
-        self.state_stack = ['master']
-        self._state_change_enabled = True
-        self.downtime = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
-        self.dead_slaves = {}
+        self.DOWNTIME = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
+
+        self._context = {}
+
+    @property
+    def context(self):
+        id_ = thread.get_ident()
+
+        if id_ not in self._context:
+            self._context[id_] = odict(
+                state_stack=['master'],
+                dead_slaves={},
+                state_change_enabled=True
+            )
+
+        return self._context[id_]
 
     def is_alive(self, slave):
-        death_time = self.dead_slaves.get(slave)
+        death_time = self.context.dead_slaves.get(slave)
         if death_time:
-            if death_time + self.downtime > datetime.now():
+            if death_time + self.DOWNTIME > datetime.now():
                 return False
             else:
-                del self.dead_slaves[slave]
+                del self.context.dead_slaves[slave]
         db = self.connections[slave]
         try:
             if db.connection is not None and hasattr(db.connection, 'ping'):
@@ -32,26 +58,26 @@ class ReplicationRouter(object):
                 db.cursor()
             return True
         except StandardError:
-            self.dead_slaves[slave] = datetime.now()
+            self.context.dead_slaves[slave] = datetime.now()
             return False
 
     def set_state_change(self, enabled):
-        self._state_change_enabled = enabled
+        self.context.state_change_enabled = enabled
 
     def state(self):
         '''
         Current state of routing: 'master' or 'slave'.
         '''
-        return self.state_stack[-1]
+        return self.context.state_stack[-1]
 
     def use_state(self, state):
         '''
         Switches router into a new state. Requires a paired call
         to 'revert' for reverting to previous state.
         '''
-        if not self._state_change_enabled:
+        if not self.context.state_change_enabled:
             state = self.state()
-        self.state_stack.append(state)
+        self.context.state_stack.append(state)
         return self
 
     def revert(self):
@@ -59,7 +85,7 @@ class ReplicationRouter(object):
         Reverts wrapper state to a previous value after calling
         'use_state'.
         '''
-        self.state_stack.pop()
+        self.context.state_stack.pop()
 
     def db_for_write(self, model, **hints):
         return self.DEFAULT_DB_ALIAS
