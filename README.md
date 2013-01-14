@@ -126,13 +126,14 @@ To overcome this problem both ReplicationMiddleware and decorators support
 special technique where handling of a GET request resulting from a redirect
 after a POST is explicitly routed to a master database.
 
+
 ### Global overrides
 
-In some cases there is also necessary to override the default middleware behaviour
-for choosing target database bases on HTTP request method. For example if
-you need to route concrete POST request to slave because you know that request handler
-doesn't do any writes. Settings variable `REPLICATED_VIEWS_OVERRIDES` holds the mapping
-of views names (urlpatterns names) or view's import paths to specific type of database.
+In some cases it might be necessary to override how the middleware chooses
+a target database based on the HTTP request method. For example if you need to
+route certain POST requests to a slave if you know that the request handler
+doesn't do any writes. The settings variable `REPLICATED_VIEWS_OVERRIDES` holds
+the mapping of view names (urlpatterns names) or view import paths to database:
 
     REPLICATED_VIEWS_OVERRIDES = {
         'api-store-event': 'slave',
