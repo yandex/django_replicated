@@ -5,14 +5,10 @@ from django.core import urlresolvers
 
 def _get_func_import_path(func):
     '''
-    Taken from django.core.urlsolvers
+    Returns import path of a class method or a module-level funtion.
     '''
-    if not hasattr(func, '__name__'):
-        # An instance of a callable class
-        return '.'.join([func.__class__.__module__, func.__class__.__name__])
-    else:
-        # A function
-        return '.'.join([func.__module__, func.__name__])
+    base = func.__class__ if hasattr(func, '__class__') else func
+    return '%s.%s' % (base.__module__, base.__name__)
 
 
 def check_state_override(request, state):
