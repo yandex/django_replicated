@@ -30,3 +30,7 @@ class ReplicationMiddleware:
         if hasattr(request, '_replication_middleware_state'):
             utils._revert()
         return response
+
+    def process_exception(self, request, exception):
+        if hasattr(request, '_replication_middleware_state'):
+            utils._reset()

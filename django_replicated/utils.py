@@ -58,6 +58,7 @@ def _apply(name, *args, **kwargs):
 _use_state = lambda state: _apply('use_state', state)
 _revert = lambda: _apply('revert')
 _state = lambda: _apply('state')
+_reset = lambda: _apply('reset')
 
 enable_state_change = lambda: _apply('set_state_change', True)
 disable_state_change = lambda: _apply('set_state_change', False)

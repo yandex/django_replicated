@@ -45,6 +45,14 @@ class ReplicationRouter(object):
 
         return self._context[id_]
 
+    def reset(self):
+        '''
+        Reset context for the thread
+        '''
+        id_ = thread.get_ident()
+
+        self._context.pop(id_, None)
+
     def is_alive(self, slave):
         death_time = self.context.dead_slaves.get(slave)
         if death_time:
