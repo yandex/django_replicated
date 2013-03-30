@@ -1,6 +1,7 @@
 from django import db
 from django.conf import settings
 from django.core import urlresolvers
+from functools import partial
 
 
 def _get_func_import_path(func):
@@ -40,7 +41,7 @@ def handle_updated_redirect(request, response):
     request will use master database. This avoids situation when
     replicas lagging behind on updates a little.
     '''
-    if response.status_code in [302, 303] and _state() == 'master':
+    if response.status_code in [302, 303] and routers.state() == 'master':
         response.set_cookie('just_updated', 'true', max_age=5)
     else:
         if 'just_updated' in request.COOKIES:
@@ -50,15 +51,14 @@ def handle_updated_redirect(request, response):
 # Internal helper function used to access a ReplicationRouter instance(s)
 # that Django creates inside its db module.
 
-def _apply(name, *args, **kwargs):
-    for r in db.router.routers:
-        if hasattr(r, name):
-            return getattr(r, name)(*args, **kwargs)
+class Routers(object):
+    def __getattr__(self, name):
+        for r in db.router.routers:
+            if hasattr(r, name):
+                return getattr(r, name)
+            # TODO Если ничего не нашли надо рэйзить вразумительную ошибку.
 
-_use_state = lambda state: _apply('use_state', state)
-_revert = lambda: _apply('revert')
-_state = lambda: _apply('state')
-_reset = lambda: _apply('reset')
+routers = Routers()
 
-enable_state_change = lambda: _apply('set_state_change', True)
-disable_state_change = lambda: _apply('set_state_change', False)
+enable_state_change = partial(routers.set_state_change, True)
+disable_state_change = partial(routers.set_state_change, False)

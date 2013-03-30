@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import utils
+from utils import routers
 
 class ReplicationMiddleware:
     '''
@@ -17,20 +18,10 @@ class ReplicationMiddleware:
     master connection even if it only GETs data.
     '''
     def process_request(self, request):
-        state = request.method in ['GET', 'HEAD'] and 'slave' or 'master'
+        state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
         state = utils.check_state_override(request, state)
-        router = utils._use_state(state)
-        if router:
-            # Set an attribute on the request to signal process_response that
-            # it should indeed call 'revert'
-            request._replication_middleware_state = router.state()
 
     def process_response(self, request, response):
         utils.handle_updated_redirect(request, response)
-        if hasattr(request, '_replication_middleware_state'):
-            utils._revert()
         return response
 
-    def process_exception(self, request, exception):
-        if hasattr(request, '_replication_middleware_state'):
-            utils._reset()
