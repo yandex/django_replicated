@@ -20,7 +20,7 @@ class ReplicationMiddleware:
     def process_request(self, request):
         state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
         state = utils.check_state_override(request, state)
-        utils._init(state)
+        routers.init(state)
         if (not routers.is_alive(routers.db_for_write())
                 or self.readonly_mode()):
             request.db_in_readonly_mode = True
