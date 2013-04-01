@@ -36,22 +36,19 @@ class ReplicationRouter(object):
         id_ = thread.get_ident()
 
         if id_ not in self._context:
-            self._context[id_] = odict(
-                state_stack=[],
-                dead_slaves={},
-                # TODO Надо разобраться с этим флагом.
-                state_change_enabled=True,
-                chosen={},
-                readonly_mode=False,
-            )
+            self._context[id_] = odict(dead_slaves={})
+            self._clear_context(self._context[id_])
 
         return self._context[id_]
 
-    def init(self, state):
-        context = self.context
+    def _clear_context(self, context):
         context.state_stack = []
         context.chosen={}
         context.readonly_mode = False
+        context.state_change_enabled = True
+
+    def init(self, state):
+        self._clear_context(self.context)
         self.use_state(state)
 
     def set_readonly_mode(self, mode):
