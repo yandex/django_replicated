@@ -21,18 +21,8 @@ class ReplicationMiddleware:
         state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
         state = utils.check_state_override(request, state)
         routers.init(state)
-        if (not routers.is_alive(routers.db_for_write())
-                or self.readonly_mode()):
-            request.db_in_readonly_mode = True
-            routers.set_readonly_mode(True)
-            return self.readonly_handle()
 
     def process_response(self, request, response):
         utils.handle_updated_redirect(request, response)
         return response
 
-    def readonly_handle(self):
-        pass
-
-    def readonly_mode(self, request):
-        return False

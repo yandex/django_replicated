@@ -44,15 +44,12 @@ class ReplicationRouter(object):
     def _clear_context(self, context):
         context.state_stack = []
         context.chosen={}
-        context.readonly_mode = False
         context.state_change_enabled = True
 
     def init(self, state):
         self._clear_context(self.context)
         self.use_state(state)
 
-    def set_readonly_mode(self, mode):
-        self.context.readonly_mode = mode
 
     def is_alive(self, db_name):
         death_time = self.context.dead_slaves.get(db_name)
@@ -102,10 +99,6 @@ class ReplicationRouter(object):
         self.context.state_stack.pop()
 
     def db_for_write(self, model, **hints):
-        if self.context.readonly_mode:
-            # TODO Тут надо понять, что правильно возвращать.
-            return None
-
         self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
 
         return self.DEFAULT_DB_ALIAS
