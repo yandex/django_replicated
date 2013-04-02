@@ -37,17 +37,17 @@ class ReplicationRouter(object):
 
         if id_ not in self._context:
             self._context[id_] = odict(dead_slaves={})
-            self._clear_context(self._context[id_])
+            self._init_context(self._context[id_])
 
         return self._context[id_]
 
-    def _clear_context(self, context):
+    def _init_context(self, context):
         context.state_stack = []
         context.chosen={}
         context.state_change_enabled = True
 
     def init(self, state):
-        self._clear_context(self.context)
+        self._init_context(self.context)
         self.use_state(state)
 
 
