@@ -36,31 +36,29 @@ class ReplicationRouter(object):
         id_ = thread.get_ident()
 
         if id_ not in self._context:
-            self._context[id_] = odict(
-                state_stack=['master'],
-                dead_slaves={},
-                state_change_enabled=True,
-                chosen={}
-            )
+            self._context[id_] = odict(dead_slaves={})
+            self._init_context(self._context[id_])
 
         return self._context[id_]
 
-    def reset(self):
-        '''
-        Reset context for the thread
-        '''
-        id_ = thread.get_ident()
+    def _init_context(self, context):
+        context.state_stack = []
+        context.chosen={}
+        context.state_change_enabled = True
 
-        self._context.pop(id_, None)
+    def init(self, state):
+        self._init_context(self.context)
+        self.use_state(state)
 
-    def is_alive(self, slave):
-        death_time = self.context.dead_slaves.get(slave)
+
+    def is_alive(self, db_name):
+        death_time = self.context.dead_slaves.get(db_name)
         if death_time:
             if death_time + self.DOWNTIME > datetime.now():
                 return False
             else:
-                del self.context.dead_slaves[slave]
-        db = self.connections[slave]
+                del self.context.dead_slaves[db_name]
+        db = self.connections[db_name]
         try:
             if db.connection is not None and hasattr(db.connection, 'ping'):
                 db.connection.ping()
@@ -68,7 +66,7 @@ class ReplicationRouter(object):
                 db.cursor()
             return True
         except StandardError:
-            self.context.dead_slaves[slave] = datetime.now()
+            self.context.dead_slaves[db_name] = datetime.now()
             return False
 
     def set_state_change(self, enabled):
@@ -78,7 +76,10 @@ class ReplicationRouter(object):
         '''
         Current state of routing: 'master' or 'slave'.
         '''
-        return self.context.state_stack[-1]
+        if self.context.state_stack:
+            return self.context.state_stack[-1]
+        else:
+            return 'master'
 
     def use_state(self, state):
         '''
@@ -96,9 +97,6 @@ class ReplicationRouter(object):
         'use_state'.
         '''
         self.context.state_stack.pop()
-
-        if len(self.context.state_stack) == 1:
-            self.context.chosen = {}
 
     def db_for_write(self, model, **hints):
         self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
