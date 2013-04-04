@@ -19,17 +19,18 @@ Usage:
 '''
 import utils
 from functools import wraps
+from utils import routers
 
 def _use_state(state):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             current_state = utils.check_state_override(request, state)
-            utils._use_state(current_state)
+            routers.use_state(current_state)
             try:
                 response = func(request, *args, **kwargs)
             finally:
-                utils._revert()
+                routers.revert()
             utils.handle_updated_redirect(request, response)
             return response
         return wrapper
