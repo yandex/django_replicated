@@ -57,8 +57,8 @@ class Routers(object):
         for r in db.router.routers:
             if hasattr(r, name):
                 return getattr(r, name)
-            msg = u'Not found the router with the method "%s".' % name
-            raise AttributeError(msg)
+        msg = u'Not found the router with the method "%s".' % name
+        raise AttributeError(msg)
 
 routers = Routers()
 
