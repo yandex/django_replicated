@@ -1,73 +1,27 @@
 # -*- coding:utf-8 -*-
 import random
-from datetime import datetime, timedelta
-import thread
 
 from django.conf import settings
+from django.db.utils import DEFAULT_DB_ALIAS
 
-
-class odict(dict):
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            raise AttributeError(name)
-
-    def __setattr__(self, name, value):
-        self[name] = value
+from .db_utils import db_is_alive_with_cache
 
 
 class ReplicationRouter(object):
 
     def __init__(self):
-        from django.db import connections
-        from django.db.utils import DEFAULT_DB_ALIAS
-
-        self.connections = connections
-
+        from .context import context
+        self.context = context
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
-        self.DOWNTIME = timedelta(seconds=getattr(settings, 'DATABASE_DOWNTIME', 60))
-        self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [self.DEFAULT_DB_ALIAS])
-
-        self._context = {}
-
-    @property
-    def context(self):
-        id_ = thread.get_ident()
-
-        if id_ not in self._context:
-            self._context[id_] = odict(dead_slaves={})
-            self._init_context(self._context[id_])
-
-        return self._context[id_]
-
-    def _init_context(self, context):
-        context.state_stack = []
-        context.chosen={}
-        context.state_change_enabled = True
+        self.DOWNTIME = getattr(settings, 'DATABASE_DOWNTIME', 60)
+        self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
 
     def init(self, state):
-        self._init_context(self.context)
+        self.context.init()
         self.use_state(state)
 
-
     def is_alive(self, db_name):
-        death_time = self.context.dead_slaves.get(db_name)
-        if death_time:
-            if death_time + self.DOWNTIME > datetime.now():
-                return False
-            else:
-                del self.context.dead_slaves[db_name]
-        db = self.connections[db_name]
-        try:
-            if db.connection is not None and hasattr(db.connection, 'ping'):
-                db.connection.ping()
-            else:
-                db.cursor()
-            return True
-        except StandardError:
-            self.context.dead_slaves[db_name] = datetime.now()
-            return False
+        return db_is_alive_with_cache(db_name, self.DOWNTIME)
 
     def set_state_change(self, enabled):
         self.context.state_change_enabled = enabled
