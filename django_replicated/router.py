@@ -17,7 +17,10 @@ class ReplicationRouter(object):
         self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
 
     def init(self, state):
-        self.context.init()
+        self.context.state_stack = []
+        self.context.chosen = {}
+        self.context.state_change_enabled = True
+
         self.use_state(state)
 
     def is_alive(self, db_name):

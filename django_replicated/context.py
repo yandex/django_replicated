@@ -19,27 +19,6 @@ class Context(object):
         thread_context[name] = value
 
     def _get_thread_context(self):
-        id_ = thread.get_ident()
-
-        thread_context = self._contexts.get(id_)
-
-        if thread_context is None:
-            thread_context = {'dead_slaves': {}}
-            self._init_context(thread_context)
-            self._contexts[id_] = thread_context
-
-        return thread_context
-
-    def _init_thread_context(self, thread_context):
-        thread_context.update({
-            'state_stack': [],
-            'chosen': {},
-            'state_change_enabled': True,
-        })
-
-    def init(self):
-        thread_context = self._get_thread_context()
-        self._init_context(thread_context)
-
+        return self._contexts.setdefault(thread.get_ident(), {})
 
 context = Context()

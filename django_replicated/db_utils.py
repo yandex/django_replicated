@@ -21,12 +21,15 @@ def db_is_alive_with_cache(db_name, cache_seconds=0):
 
     cache_td = timedelta(seconds=cache_seconds)
 
-    death_time = context.dead_slaves.get(db_name)
-    if death_time:
-        if death_time + cache_td > datetime.now():
-            return False
-        else:
-            del context.dead_slaves[db_name]
+    if hasattr(context, 'dead_slaves'):
+        death_time = context.dead_slaves.get(db_name)
+        if death_time:
+            if death_time + cache_td > datetime.now():
+                return False
+            else:
+                del context.dead_slaves[db_name]
+    else:
+        context.dead_slaves = {}
 
     is_alive = db_is_alive(db_name)
     if not is_alive:
