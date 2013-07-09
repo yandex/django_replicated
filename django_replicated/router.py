@@ -16,10 +16,37 @@ class ReplicationRouter(object):
         self.DOWNTIME = getattr(settings, 'DATABASE_DOWNTIME', 60)
         self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
 
+    def state_stack():
+        def fget(self):
+            return self.context.get('state_stack', [])
+
+        def fset(self, value):
+            self.context.state_stack = value
+        return locals()
+    state_stack = property(**state_stack())
+
+    def chosen():
+        def fget(self):
+            return self.context.get('chosen', {})
+
+        def fset(self, value):
+            self.context.chosen = value
+        return locals()
+    chosen = property(**chosen())
+
+    def state_change_enabled():
+        def fget(self):
+            return self.context.get('state_change_enabled', True)
+
+        def fset(self, value):
+            self.context.state_change_enabled = value
+        return locals()
+    state_change_enabled = property(**state_change_enabled())
+
     def init(self, state):
-        self.context.state_stack = []
-        self.context.chosen = {}
-        self.context.state_change_enabled = True
+        self.state_stack = []
+        self.chosen = {}
+        self.state_change_enabled = True
 
         self.use_state(state)
 
@@ -27,14 +54,14 @@ class ReplicationRouter(object):
         return db_is_alive(db_name, self.DOWNTIME)
 
     def set_state_change(self, enabled):
-        self.context.state_change_enabled = enabled
+        self.state_change_enabled = enabled
 
     def state(self):
         '''
         Current state of routing: 'master' or 'slave'.
         '''
-        if self.context.state_stack:
-            return self.context.state_stack[-1]
+        if self.state_stack:
+            return self.state_stack[-1]
         else:
             return 'master'
 
@@ -43,9 +70,9 @@ class ReplicationRouter(object):
         Switches router into a new state. Requires a paired call
         to 'revert' for reverting to previous state.
         '''
-        if not self.context.state_change_enabled:
+        if not self.state_change_enabled:
             state = self.state()
-        self.context.state_stack.append(state)
+        self.state_stack.append(state)
         return self
 
     def revert(self):
@@ -53,10 +80,10 @@ class ReplicationRouter(object):
         Reverts wrapper state to a previous value after calling
         'use_state'.
         '''
-        self.context.state_stack.pop()
+        self.state_stack.pop()
 
     def db_for_write(self, model, **hints):
-        self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
+        self.chosen['master'] = self.DEFAULT_DB_ALIAS
 
         return self.DEFAULT_DB_ALIAS
 
@@ -64,8 +91,8 @@ class ReplicationRouter(object):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
 
-        if self.state() in self.context.chosen:
-            return self.context.chosen[self.state()]
+        if self.state() in self.chosen:
+            return self.chosen[self.state()]
 
         slaves = self.SLAVES[:]
         random.shuffle(slaves)
@@ -77,6 +104,6 @@ class ReplicationRouter(object):
         else:
             chosen = self.DEFAULT_DB_ALIAS
 
-        self.context.chosen[self.state()] = chosen
+        self.chosen[self.state()] = chosen
 
         return chosen
