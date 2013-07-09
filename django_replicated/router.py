@@ -4,7 +4,7 @@ import random
 from django.conf import settings
 from django.db.utils import DEFAULT_DB_ALIAS
 
-from .db_utils import db_is_alive_with_cache
+from .db_utils import db_is_alive
 
 
 class ReplicationRouter(object):
@@ -24,7 +24,7 @@ class ReplicationRouter(object):
         self.use_state(state)
 
     def is_alive(self, db_name):
-        return db_is_alive_with_cache(db_name, self.DOWNTIME)
+        return db_is_alive(db_name, self.DOWNTIME)
 
     def set_state_change(self, enabled):
         self.context.state_change_enabled = enabled
