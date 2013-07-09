@@ -10,6 +10,7 @@ class Context(local):
             setattr(self, attr, default)
             return default
         else:
-            getattr(self, attr)
+            return getattr(self, attr)
+
 
 context = Context()
