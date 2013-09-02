@@ -1,10 +1,9 @@
 # -*- coding:utf-8 -*-
-
 import logging
 import socket
 from datetime import datetime, timedelta
+
 from django.conf import settings
-from django.db import connections
 from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
 
 
@@ -17,6 +16,7 @@ cache_key = 'dead_databases_' + socket.gethostname()
 
 
 def _db_is_alive(db_name):
+    from django.db import connections
 
     db = connections[db_name]
     try:

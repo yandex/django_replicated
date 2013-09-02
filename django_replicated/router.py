@@ -3,7 +3,6 @@ import random
 from threading import local
 
 from django.conf import settings
-from django.db.utils import DEFAULT_DB_ALIAS
 
 from .db_utils import db_is_alive
 
@@ -11,6 +10,7 @@ from .db_utils import db_is_alive
 class ReplicationRouter(object):
 
     def __init__(self):
+        from django.db.utils import DEFAULT_DB_ALIAS
         self._context = local()
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.DOWNTIME = getattr(settings, 'DATABASE_DOWNTIME', 60)
