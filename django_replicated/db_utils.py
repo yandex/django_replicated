@@ -33,7 +33,7 @@ def _db_is_alive(db_name):
 
 
 def db_is_alive(db_name, cache_seconds=0, number_of_tries=1, force=False):
-    assert number_of_tries >= 1, u'Number of tries must be >= 1. RTFM.'
+    assert number_of_tries >= 1, u'Number of tries must be >= 1.'
 
     cache_td = timedelta(seconds=cache_seconds)
 
