@@ -20,16 +20,12 @@ class ReplicationRouter(object):
         self._context.state_stack = []
         self._context.chosen = {}
         self._context.state_change_enabled = True
+        self._context.inited = True
 
     @property
     def context(self):
-        if (
-            not hasattr(self._context, 'state_stack') or
-            not hasattr(self._context, 'chosen') or
-            not hasattr(self._context, 'state_change_enabled')
-        ):
+        if not getattr(self._context, 'inited', False):
             self._init_context()
-
         return self._context
 
     def init(self, state):
