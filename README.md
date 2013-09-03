@@ -78,7 +78,7 @@ work is done by simply using a middleware :
         ...
     ]
 
-The middleare sets replication state to use slaves during handling of GET and
+The middleware sets replication state to use slaves during handling of GET and
 HEAD requests and to use a master otherwise.
 
 While this is usually enough there are cases when DB access is not controlled
@@ -148,7 +148,7 @@ There are cases when you want to disable switching of replication modes
 entirely. A most common example is testing your code with tests that use
 non-commiting transactions to preserve data between testcases. Each test is
 called with a default master database which it uses to load fixtures. Then if
-any code that the test calls will switch replication to the slave mode the
+any code that the test calls will switch replication to the slave mode, it
 won't see any fixture data in a test slave database because the master never
 commits.
 
