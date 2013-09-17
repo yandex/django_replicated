@@ -27,7 +27,7 @@ def _db_is_alive(db_name):
             logger.debug(u'Get cursor for db %s.', db_name)
             db.cursor()
         return True
-    except StandardError:
+    except Exception:
         logger.exception(u'Error verifying db %s.', db_name)
         return False
 
