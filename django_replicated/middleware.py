@@ -1,6 +1,11 @@
 # -*- coding:utf-8 -*-
-import utils
-from utils import routers
+
+from .utils import (
+    check_state_override,
+    handle_updated_redirect,
+    routers,
+)
+
 
 class ReplicationMiddleware:
     '''
@@ -19,10 +24,10 @@ class ReplicationMiddleware:
     '''
     def process_request(self, request):
         state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
-        state = utils.check_state_override(request, state)
+        state = check_state_override(request, state)
         routers.init(state)
 
     def process_response(self, request, response):
-        utils.handle_updated_redirect(request, response)
+        handle_updated_redirect(request, response)
         return response
 
