@@ -3,6 +3,7 @@
 from .utils import (
     check_state_override,
     handle_updated_redirect,
+    is_service_readonly,
     routers,
 )
 
@@ -31,3 +32,7 @@ class ReplicationMiddleware:
         handle_updated_redirect(request, response)
         return response
 
+
+class ReadOnlyMiddleware:
+    def process_request(self, request):
+        request.service_is_readonly = is_service_readonly(request)

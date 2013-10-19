@@ -7,6 +7,8 @@ from django import db
 from django.conf import settings
 from django.core import urlresolvers
 
+from .db_utils import db_is_alive
+
 
 def _get_func_import_path(func):
     '''
@@ -50,6 +52,16 @@ def handle_updated_redirect(request, response):
     else:
         if 'just_updated' in request.COOKIES:
             response.delete_cookie('just_updated')
+
+
+def is_service_readonly(request):
+    from django.db import DEFAULT_DB_ALIAS
+
+    return not db_is_alive(
+        db_name=DEFAULT_DB_ALIAS,
+        cache_seconds=getattr(settings, 'REPLICATED_READ_ONLY_DOWNTIME', 20),
+        number_of_tries=getattr(settings, 'REPLICATED_READ_ONLY_TRIES', 1),
+    )
 
 
 # Internal helper function used to access a ReplicationRouter instance(s)
