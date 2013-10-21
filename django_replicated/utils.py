@@ -1,8 +1,13 @@
+# -*- coding:utf-8 -*-
+
+import warnings
+from functools import partial
+
 from django import db
 from django.conf import settings
 from django.core import urlresolvers
-from functools import partial
-import warnings
+
+from .db_utils import db_is_alive
 
 
 def _get_func_import_path(func):
@@ -49,9 +54,18 @@ def handle_updated_redirect(request, response):
             response.delete_cookie('just_updated')
 
 
+def is_service_readonly():
+    from django.db import DEFAULT_DB_ALIAS
+
+    return not db_is_alive(
+        db_name=DEFAULT_DB_ALIAS,
+        cache_seconds=getattr(settings, 'REPLICATED_READ_ONLY_DOWNTIME', 20),
+        number_of_tries=getattr(settings, 'REPLICATED_READ_ONLY_TRIES', 1),
+    )
+
+
 # Internal helper function used to access a ReplicationRouter instance(s)
 # that Django creates inside its db module.
-
 class Routers(object):
     def __getattr__(self, name):
         for r in db.router.routers:
@@ -60,12 +74,14 @@ class Routers(object):
         msg = u'Not found the router with the method "%s".' % name
         raise AttributeError(msg)
 
-routers = Routers()
 
+routers = Routers()
 enable_state_change = partial(routers.set_state_change, True)
 disable_state_change = partial(routers.set_state_change, False)
 
 
 def _use_state(*args, **kwargs):
-    warnings.warn('You use a private method _use_state and he is outdated',
-                    DeprecationWarning)
+    warnings.warn(
+        'You use a private method _use_state and he is outdated',
+        DeprecationWarning
+    )
