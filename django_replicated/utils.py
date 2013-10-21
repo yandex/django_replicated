@@ -54,7 +54,7 @@ def handle_updated_redirect(request, response):
             response.delete_cookie('just_updated')
 
 
-def is_service_readonly(request):
+def is_service_readonly():
     from django.db import DEFAULT_DB_ALIAS
 
     return not db_is_alive(

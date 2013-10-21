@@ -35,4 +35,4 @@ class ReplicationMiddleware:
 
 class ReadOnlyMiddleware:
     def process_request(self, request):
-        request.service_is_readonly = is_service_readonly(request)
+        request.service_is_readonly = is_service_readonly()
