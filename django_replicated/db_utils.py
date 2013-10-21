@@ -65,7 +65,7 @@ def db_is_alive(db_name, cache_seconds=0, number_of_tries=1, force=False):
 
     if not is_alive:
         msg = u'Error connecting to db %s in %d tries.'
-        logger.error(msg, db_name, number_of_tries)
+        logger.warning(msg, db_name, number_of_tries)
         dead_databases[db_name] = datetime.now()
 
     cache.set(cache_key, dead_databases)
