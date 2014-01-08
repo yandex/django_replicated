@@ -3,12 +3,12 @@
 from .utils import (
     check_state_override,
     handle_updated_redirect,
-    is_service_readonly,
+    is_service_read_only,
     routers,
 )
 
 
-class ReplicationMiddleware:
+class ReplicationMiddleware(object):
     '''
     Middleware for automatically switching routing state to
     master or slave depending on request method.
@@ -33,6 +33,6 @@ class ReplicationMiddleware:
         return response
 
 
-class ReadOnlyMiddleware:
+class ReadOnlyMiddleware(object):
     def process_request(self, request):
-        request.service_is_readonly = is_service_readonly()
+        request.service_is_readonly = is_service_read_only()

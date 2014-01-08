@@ -7,7 +7,7 @@ from django import db
 from django.conf import settings
 from django.core import urlresolvers
 
-from .db_utils import db_is_alive
+from .db_utils import db_is_alive, db_is_not_read_only
 
 
 def _get_func_import_path(func):
@@ -54,10 +54,14 @@ def handle_updated_redirect(request, response):
             response.delete_cookie('just_updated')
 
 
-def is_service_readonly():
+def is_service_read_only():
     from django.db import DEFAULT_DB_ALIAS
 
-    return not db_is_alive(
+    USE_SELECT = getattr(settings, 'REPLICATED_SELECT_READ_ONLY', False)
+
+    check_method = db_is_not_read_only if USE_SELECT else db_is_alive
+
+    return not check_method(
         db_name=DEFAULT_DB_ALIAS,
         cache_seconds=getattr(settings, 'REPLICATED_READ_ONLY_DOWNTIME', 20),
         number_of_tries=getattr(settings, 'REPLICATED_READ_ONLY_TRIES', 1),
