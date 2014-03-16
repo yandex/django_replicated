@@ -26,7 +26,7 @@ def check_state_override(request, state):
     if request.COOKIES.get('just_updated') == 'true':
         return 'master'
 
-    overrides = getattr(settings, 'REPLICATED_VIEWS_OVERRIDES', [])
+    overrides = getattr(settings, 'REPLICATED_VIEWS_OVERRIDES', {})
 
     if overrides:
         match = urlresolvers.resolve(request.path_info)
