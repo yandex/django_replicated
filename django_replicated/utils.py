@@ -6,6 +6,7 @@ from functools import partial
 from django import db
 from django.conf import settings
 from django.core import urlresolvers
+from django.http import Http404
 
 from .db_utils import db_is_alive, db_is_not_read_only
 
@@ -29,7 +30,11 @@ def check_state_override(request, state):
     overrides = getattr(settings, 'REPLICATED_VIEWS_OVERRIDES', {})
 
     if overrides:
-        match = urlresolvers.resolve(request.path_info)
+        try:
+            match = urlresolvers.resolve(request.path_info)
+        except Http404:
+            return state
+
         import_path = _get_func_import_path(match.func)
 
         for lookup_view, forced_state in overrides.iteritems():
