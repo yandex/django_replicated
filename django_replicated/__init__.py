@@ -1,1 +1,2 @@
 from router import ReplicationRouter
+from failover_router import FailoverReplicationRouter
