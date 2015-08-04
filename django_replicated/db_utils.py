@@ -30,6 +30,8 @@ def _db_is_alive(db_name):
         return True
     except Exception:
         logger.exception(u'Error verifying db %s.', db_name)
+        if db.connection:
+            db.connection.close()
         return False
 
 
