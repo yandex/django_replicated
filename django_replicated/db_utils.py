@@ -30,8 +30,7 @@ def _db_is_alive(db_name):
         return True
     except Exception:
         logger.exception(u'Error verifying db %s.', db_name)
-        if db.connection:
-            db.connection.close()
+        _close_db_connection(db.connection)
         return False
 
 
@@ -118,3 +117,15 @@ def check_db(
 
 db_is_alive = partial(check_db, _db_is_alive)
 db_is_not_read_only = partial(check_db, _db_is_not_read_only)
+
+
+from .exceptions import DATABASE_ERRORS
+
+def _close_db_connection(connection):
+    if connection:
+        try:
+            connection.close()
+        except DATABASE_ERRORS as exc:
+            # See also https://github.com/celery/django-celery/issues/93
+            if "closed" not in str(exc):
+                raise
