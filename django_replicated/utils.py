@@ -48,7 +48,7 @@ def handle_updated_redirect(request, response):
     replicas lagging behind on updates a little.
     '''
     if response.status_code in [302, 303] and routers.state() == 'master':
-        response.set_cookie('just_updated', 'true', max_age=5)
+        use_master_on_next_request(response)
     else:
         if 'just_updated' in request.COOKIES:
             response.delete_cookie('just_updated')
@@ -66,6 +66,13 @@ def is_service_read_only():
         cache_seconds=getattr(settings, 'REPLICATED_READ_ONLY_DOWNTIME', 20),
         number_of_tries=getattr(settings, 'REPLICATED_READ_ONLY_TRIES', 1),
     )
+
+
+def use_master_on_next_request(response):
+    """
+    Use it to explicitly use master on next request to your app.
+    """
+    response.set_cookie('just_updated', 'true', max_age=5)
 
 
 # Internal helper function used to access a ReplicationRouter instance(s)
