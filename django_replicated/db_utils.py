@@ -5,7 +5,13 @@ from datetime import datetime, timedelta
 from functools import partial
 
 from django.conf import settings
-from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
+
+from django import VERSION
+if VERSION < (1, 7, 0):
+    from django.core.cache import get_cache, DEFAULT_CACHE_ALIAS
+else:
+    from django.core.cache import caches, DEFAULT_CACHE_ALIAS
+    get_cache = lambda cache_name: caches[cache_name]
 
 
 logger = logging.getLogger('replicated.db_checker')
@@ -46,6 +52,10 @@ def _db_is_not_read_only(db_name):
         if db_engine == 'mysql':
             cursor.execute('SELECT @@read_only')
             return not int(cursor.fetchone()[0])
+
+        elif db_engine in ('postgresql_psycopg2', 'postgis'):
+            cursor.execute('SELECT pg_is_in_recovery()')
+            return not cursor.fetchone()[0]
 
         elif db_engine == 'oracle':
             cursor.execute('SELECT open_mode FROM v$database')
