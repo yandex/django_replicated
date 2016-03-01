@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# coding: utf-8
 '''
 Decorators for using specific routing state for particular requests.
 Used in cases when automatic switching based on request method doesn't
@@ -17,24 +17,13 @@ Usage:
     def my_view(request, ...):
         # same with slave connection
 '''
-import utils
-from functools import wraps
-from utils import routers
+from __future__ import unicode_literals
 
-def _use_state(state):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            current_state = utils.check_state_override(request, state)
-            routers.use_state(current_state)
-            try:
-                response = func(request, *args, **kwargs)
-            finally:
-                routers.revert()
-            utils.handle_updated_redirect(request, response)
-            return response
-        return wrapper
-    return decorator
+from django.utils.decorators import decorator_from_middleware_with_args
 
-use_master = _use_state('master')
-use_slave = _use_state('slave')
+from .middleware import ReplicationMiddleware
+
+
+use_state = decorator_from_middleware_with_args(ReplicationMiddleware)
+use_master = use_state('master')
+use_slave = use_state('slave')
