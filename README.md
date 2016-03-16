@@ -13,7 +13,11 @@ SQL operations.
 
 1.  Install django_replicated distribution using "python setup.py install".
 
-2.  In settings.py configure your master and slave databases in a standard way:
+1.  Add import of the default django_replicated settings into your `settings.py`:
+
+        from django_replicated.settings import *
+
+1.  In settings.py configure your master and slave databases in a standard way:
 
         DATABASES {
             'default': {
@@ -27,20 +31,20 @@ SQL operations.
             },
         }
 
-3.  Teach django_replicated which databases are slaves:
+1.  Teach django_replicated which databases are slaves:
 
-        DATABASE_SLAVES = ['slave1', 'slave2']
+        REPLICATED_DATABASE_SLAVES = ['slave1', 'slave2']
 
     The 'default' database is always treated as master.
 
-4.  Configure a replication router:
+1.  Configure a replication router:
 
-        DATABASE_ROUTERS = ['django_replicated.ReplicationRouter']
+        DATABASE_ROUTERS = ['django_replicated.router.ReplicationRouter']
 
-5.  Configure timeout to exclude a database from the available list after an
+1.  Configure timeout to exclude a database from the available list after an
     unsuccessful ping:
 
-        DATABASE_DOWNTIME = 20
+        REPLICATED_DATABASE_DOWNTIME = 20
 
     The default downtime value is 60 seconds.
 
@@ -142,19 +146,20 @@ names:
     }
 
 
-### Disabling state switching
+## CHANGELOG
 
-There are cases when you want to disable switching of replication modes
-entirely. A most common example is testing your code with tests that use
-non-commiting transactions to preserve data between testcases. Each test is
-called with a default master database which it uses to load fixtures. Then if
-any code that the test calls will switch replication to the slave mode, it
-won't see any fixture data in a test slave database because the master never
-commits.
+### 2.0 Backward incompatible changes
+* Default `django_replicated.settings` file was added.
+* Some settings variables where renamed:
 
-You can disable mode switching for such cases:
+        DATABASE_SLAVES -> REPLICATED_DATABASE_SLAVES
+        DATABASE_DOWNTIME -> REPLICATED_DATABASE_DOWNTIME
+* Another settings variables where deleted:
 
-    from django_replicated import utils
-    utils.disable_state_change()
-
-(There's also a similar `enalble_state_change()` function.)
+        REPLICATED_SELECT_READ_ONLY
+* Router import path changed to `django_replicated.router.ReplicationRouter`.
+* Ability to disable state switching with `utils.disable_state_change()` was removed.
+* Database checkers moved to `dbchecker.py` module.
+* `db_is_not_read_only` check renamed to `db_is_writable`.
+* Added state checking before writes. Enabled by default.
+* Now allows relations between objects in same master-slave db set

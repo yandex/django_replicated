@@ -1,20 +1,24 @@
-# -*- coding:utf-8 -*-
+# coding: utf-8
+from __future__ import unicode_literals
+
 import random
 from threading import local
-
-from django.conf import settings
-
-from .db_utils import db_is_alive
 
 
 class ReplicationRouter(object):
 
     def __init__(self):
-        from django.db.utils import DEFAULT_DB_ALIAS
+        from django.db import DEFAULT_DB_ALIAS
+        from django.conf import settings
+
         self._context = local()
+
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
-        self.DOWNTIME = getattr(settings, 'DATABASE_DOWNTIME', 60)
-        self.SLAVES = getattr(settings, 'DATABASE_SLAVES', [DEFAULT_DB_ALIAS])
+        self.DOWNTIME = settings.REPLICATED_DATABASE_DOWNTIME
+        self.SLAVES = settings.REPLICATED_DATABASE_SLAVES or [DEFAULT_DB_ALIAS]
+        self.CHECK_STATE_ON_WRITE = settings.REPLICATED_CHECK_STATE_ON_WRITE
+
+        self.all_allowed_aliases = [self.DEFAULT_DB_ALIAS] + self.SLAVES
 
     def _init_context(self):
         self._context.state_stack = []
@@ -33,6 +37,8 @@ class ReplicationRouter(object):
         self.use_state(state)
 
     def is_alive(self, db_name):
+        from .dbchecker import db_is_alive
+
         return db_is_alive(db_name, self.DOWNTIME)
 
     def set_state_change(self, enabled):
@@ -65,6 +71,9 @@ class ReplicationRouter(object):
         self.context.state_stack.pop()
 
     def db_for_write(self, model, **hints):
+        if self.CHECK_STATE_ON_WRITE and self.state() != 'master':
+            raise RuntimeError('Trying to access master database in slave state')
+
         self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
 
         return self.DEFAULT_DB_ALIAS
@@ -89,3 +98,10 @@ class ReplicationRouter(object):
         self.context.chosen[self.state()] = chosen
 
         return chosen
+
+    def allow_relation(self, obj1, obj2, **hints):
+        for db in (obj1._state.db, obj2._state.db):
+            if db is not None and db not in self.all_allowed_aliases:
+                return False
+
+        return True
