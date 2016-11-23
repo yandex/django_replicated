@@ -76,7 +76,8 @@ class ReplicationMiddleware(object):
         request will use master database. This avoids situation when
         replicas lagging behind on updates a little.
         '''
-        if response.status_code in [302, 303] and routers.state() == 'master':
+        force_master_codes = settings.REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES
+        if response.status_code in force_master_codes and routers.state() == 'master':
             self.set_force_master_cookie(response)
         else:
             if settings.REPLICATED_FORCE_MASTER_COOKIE_NAME in request.COOKIES:
