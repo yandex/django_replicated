@@ -4,9 +4,10 @@ import pytest
 from mock import patch
 
 from django.test import RequestFactory
+from django.test.utils import override_settings
 from django.conf import settings
 
-from django_replicated.middleware import ReplicationMiddleware, ReadOnlyMiddleware
+from django_replicated.middleware import ReadOnlyMiddleware
 from django_replicated.utils import routers
 
 
@@ -59,6 +60,20 @@ def test_replicated_middleware_force_state_by_header(client):
 
     assert response.status_code == 302
     assert routers.state() == 'slave'
+
+
+def test_replicated_force_master_cookie(client):
+    with override_settings(REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES=[200]):
+        response = client.post('/')
+
+        assert response.status_code == 302
+        assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME not in response.cookies
+
+        response = client.post('/just_updated')
+
+        assert response.status_code == 200
+        assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME in response.cookies
+        assert response.cookies.get(settings.REPLICATED_FORCE_MASTER_COOKIE_NAME).value == 'true'
 
 
 def test_readonly_middleware_check_db(_request):
