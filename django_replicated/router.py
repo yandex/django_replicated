@@ -4,21 +4,7 @@ from __future__ import unicode_literals
 import random
 from threading import local
 
-
-class SettingsContainer(object):
-    def __init__(self):
-        from django.conf import settings as django_settings
-        from . import settings as default_settings
-
-        default_settings_names = dir(default_settings)
-        django_settings_names = dir(django_settings)
-
-        for k in default_settings_names:
-            if k in django_settings_names:
-                new_value = getattr(django_settings, k)
-            else:
-                new_value = getattr(default_settings, k)
-            setattr(self, k, new_value)
+from .utils import SettingsContainer
 
 
 class ReplicationRouter(object):
