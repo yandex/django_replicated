@@ -7,6 +7,9 @@ REPLICATED_DATABASE_DOWNTIME = 60
 # List of slave database aliases. Default database is always master
 REPLICATED_DATABASE_SLAVES = []
 
+# List of master database aliases. Default is to only be the 'default' database
+REPLICATED_DATABASE_MASTERS = []
+
 # View name to state mapping
 REPLICATED_VIEWS_OVERRIDES = {}
 

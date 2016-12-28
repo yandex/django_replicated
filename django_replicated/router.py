@@ -15,16 +15,20 @@ class ReplicationRouter(object):
 
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.DOWNTIME = settings.REPLICATED_DATABASE_DOWNTIME
+        self.MASTERS = settings.REPLICATED_DATABASE_MASTERS or [DEFAULT_DB_ALIAS]
         self.SLAVES = settings.REPLICATED_DATABASE_SLAVES or [DEFAULT_DB_ALIAS]
         self.CHECK_STATE_ON_WRITE = settings.REPLICATED_CHECK_STATE_ON_WRITE
 
-        self.all_allowed_aliases = [self.DEFAULT_DB_ALIAS] + self.SLAVES
+        self.all_allowed_aliases = self.MASTERS + self.SLAVES
 
     def _init_context(self):
         self._context.state_stack = []
         self._context.chosen = {}
         self._context.state_change_enabled = True
         self._context.inited = True
+
+    def _get_actual_master(self):
+        return self.MASTERS[0]  # DEFAULT_DB_ALIAS
 
     @property
     def context(self):
@@ -74,9 +78,10 @@ class ReplicationRouter(object):
         if self.CHECK_STATE_ON_WRITE and self.state() != 'master':
             raise RuntimeError('Trying to access master database in slave state')
 
-        self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
+        actual_master = self._get_actual_master()
+        self.context.chosen['master'] = actual_master
 
-        return self.DEFAULT_DB_ALIAS
+        return actual_master
 
     def db_for_read(self, model, **hints):
         if self.state() == 'master':
