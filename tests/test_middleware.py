@@ -64,18 +64,17 @@ def test_replicated_middleware_force_state_by_header(client):
 
 
 def test_replicated_force_master_cookie(client):
-    django_settings.REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES=[200]
+    with override_settings(REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES=[200]):
+        response = client.post('/')
 
-    response = client.post('/')
+        assert response.status_code == 302
+        assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME not in response.cookies
 
-    assert response.status_code == 302
-    assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME not in response.cookies
+        response = client.post('/just_updated')
 
-    response = client.post('/just_updated')
-
-    assert response.status_code == 200
-    assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME in response.cookies
-    assert response.cookies.get(settings.REPLICATED_FORCE_MASTER_COOKIE_NAME).value == 'true'
+        assert response.status_code == 200
+        assert settings.REPLICATED_FORCE_MASTER_COOKIE_NAME in response.cookies
+        assert response.cookies.get(settings.REPLICATED_FORCE_MASTER_COOKIE_NAME).value == 'true'
 
 
 def test_readonly_middleware_check_db(_request):
