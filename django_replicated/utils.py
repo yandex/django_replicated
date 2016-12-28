@@ -21,3 +21,18 @@ class Routers(object):
 
 
 routers = Routers()
+
+
+class SettingsProxy(object):
+    def __init__(self):
+        from django.conf import settings as django_settings
+        from . import settings as default_settings
+
+        self.django_settings = django_settings
+        self.default_settings = default_settings
+
+    def __getattr__(self, k):
+        try:
+            return getattr(self.django_settings, k)
+        except AttributeError:
+            return getattr(self.default_settings, k)

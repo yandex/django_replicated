@@ -5,7 +5,6 @@ import logging
 import socket
 from functools import partial
 
-from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.utils import timezone
 from django.db import connections
@@ -18,7 +17,8 @@ except ImportError: # Django >= 1.7
     get_cache = lambda alias: caches[alias]
 
 
-from .utils import get_object_name
+from .utils import get_object_name, SettingsProxy
+settings = SettingsProxy()
 
 
 log = logging.getLogger(__name__)

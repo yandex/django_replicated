@@ -13,10 +13,6 @@ SQL operations.
 
 1.  Install django_replicated distribution using "python setup.py install".
 
-1.  Add import of the default django_replicated settings into your `settings.py`:
-
-        from django_replicated.settings import *
-
 1.  In settings.py configure your master and slave databases in a standard way:
 
         DATABASES {

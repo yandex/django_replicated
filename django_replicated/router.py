@@ -4,12 +4,14 @@ from __future__ import unicode_literals
 import random
 from threading import local
 
+from .utils import SettingsProxy
+
 
 class ReplicationRouter(object):
 
     def __init__(self):
         from django.db import DEFAULT_DB_ALIAS
-        from django.conf import settings
+        settings = SettingsProxy()
 
         self._context = local()
 

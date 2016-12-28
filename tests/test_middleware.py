@@ -5,10 +5,11 @@ from mock import patch
 
 from django.test import RequestFactory
 from django.test.utils import override_settings
-from django.conf import settings
+from django.conf import settings as django_settings
 
 from django_replicated.middleware import ReadOnlyMiddleware
-from django_replicated.utils import routers
+from django_replicated.utils import routers, SettingsProxy
+settings = SettingsProxy()
 
 
 pytestmark = pytest.mark.django_db
@@ -42,7 +43,7 @@ def test_replicated_middleware_master_state(client):
 def test_replicated_middleware_view_overrides(client, settings, url, view_id):
     routers.init('slave')
 
-    settings.REPLICATED_VIEWS_OVERRIDES = {view_id: 'master'}
+    django_settings.REPLICATED_VIEWS_OVERRIDES = {view_id: 'master'}
 
     response = client.get(url)
 

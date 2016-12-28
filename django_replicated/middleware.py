@@ -5,12 +5,12 @@ import inspect
 from functools import partial
 
 from django import db
-from django.conf import settings
 from django.core import urlresolvers
 from django.utils import six, functional
 
 from . import dbchecker
-from .utils import routers, get_object_name
+from .utils import routers, get_object_name, SettingsProxy
+settings = SettingsProxy()
 
 
 class ReplicationMiddleware(object):
