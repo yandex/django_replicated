@@ -23,17 +23,16 @@ class Routers(object):
 routers = Routers()
 
 
-class SettingsContainer(object):
+class SettingsProxy(object):
     def __init__(self):
         from django.conf import settings as django_settings
         from . import settings as default_settings
 
-        default_settings_names = dir(default_settings)
-        django_settings_names = dir(django_settings)
+        self.django_settings = django_settings
+        self.default_settings = default_settings
 
-        for k in default_settings_names:
-            if k in django_settings_names:
-                new_value = getattr(django_settings, k)
-            else:
-                new_value = getattr(default_settings, k)
-            setattr(self, k, new_value)
+    def __getattr__(self, k):
+        try:
+            return getattr(self.django_settings, k)
+        except AttributeError:
+            return getattr(self.default_settings, k)
