@@ -35,7 +35,12 @@ SQL operations.
 
         REPLICATED_DATABASE_SLAVES = ['slave1', 'slave2']
 
-    The 'default' database is always treated as master.
+    The 'default' database is by default treated as master.
+
+    OPTIONALLY, you can teach which databases are the masters, for master-master
+    replication scenarios:
+
+        REPLICATED_DATABASE_MASTERS = ['default', 'master2']
 
 1.  Configure a replication router:
 
