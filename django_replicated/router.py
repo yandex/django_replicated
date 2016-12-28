@@ -106,10 +106,13 @@ class ReplicationRouter(object):
 
         slaves = self.SLAVES[:]
         random.shuffle(slaves)
+        masters = self.MASTERS[:]
+        random.shuffle(masters)
 
-        for slave in slaves:
-            if self.is_alive(slave):
-                chosen = slave
+        # Try masters if slaves cannot be used
+        for db in slaves + masters:
+            if self.is_alive(db):
+                chosen = db
                 break
         else:
             chosen = self.DEFAULT_DB_ALIAS
