@@ -28,7 +28,21 @@ class ReplicationRouter(object):
         self._context.inited = True
 
     def _get_actual_master(self):
-        return self.MASTERS[0]  # DEFAULT_DB_ALIAS
+        try:
+            chosen = self._context.actual_master
+            if not self.is_alive(chosen):
+                raise RuntimeError()
+        except (AttributeError, RuntimeError):
+            # Be predictable here. No shuffle for master
+            for db in self.MASTERS:
+                if self.is_alive(db):
+                    chosen = db
+                    break
+            else:
+                chosen = self.DEFAULT_DB_ALIAS
+
+            self.context.actual_master = chosen
+        return chosen
 
     @property
     def context(self):
