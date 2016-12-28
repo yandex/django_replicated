@@ -6,6 +6,7 @@ import mock
 
 from django import db
 from django.db import models, router as django_router
+from django.test.utils import override_settings
 
 
 from django_replicated.router import ReplicationRouter
@@ -61,3 +62,34 @@ def test_router_allow_relation(model):
     obj2._state.db = 'slave2'
 
     assert django_router.allow_relation(obj1, obj2)
+
+
+def test_router_multimaster(model):
+    with override_settings(REPLICATED_DATABASE_MASTERS=['default', 'master2']):
+        router = ReplicationRouter()
+
+        assert router.db_for_write(model) == 'default'
+        assert router.db_for_write(model) == 'default', 'Master should not be random on choices'
+        assert router.db_for_write(model) == 'default', 'Master should not be random on choices'
+
+        with mock.patch.object(router, 'is_alive') as is_alive_mock:
+
+            def default_is_down(dbname):
+                return False if dbname == 'default' else True
+
+            def master2_is_down(dbname):
+                return False if dbname == 'master2' else True
+
+            def everything_is_up(dbname):
+                return True
+
+            is_alive_mock.side_effect = default_is_down
+            assert router.db_for_write(model) == 'master2', 'Should switch to first working master on fail'
+
+            is_alive_mock.side_effect = everything_is_up
+            assert router.db_for_write(model) == 'master2', 'Chosen master should be kept unless failed'
+            assert router.db_for_write(model) == 'master2', 'Chosen master should be kept unless failed'
+            assert router.db_for_write(model) == 'master2', 'Chosen master should be kept unless failed'
+
+            is_alive_mock.side_effect = master2_is_down
+            assert router.db_for_write(model) == 'default', 'Should switch to first working master on fail'
