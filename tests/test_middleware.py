@@ -8,8 +8,8 @@ from django.test.utils import override_settings
 from django.conf import settings as django_settings
 
 from django_replicated.middleware import ReadOnlyMiddleware
-from django_replicated.utils import routers, SettingsContainer
-settings = SettingsContainer()
+from django_replicated.utils import routers, SettingsProxy
+settings = SettingsProxy()
 
 
 pytestmark = pytest.mark.django_db
@@ -43,7 +43,7 @@ def test_replicated_middleware_master_state(client):
 def test_replicated_middleware_view_overrides(client, settings, url, view_id):
     routers.init('slave')
 
-    settings.REPLICATED_VIEWS_OVERRIDES = {view_id: 'master'}
+    django_settings.REPLICATED_VIEWS_OVERRIDES = {view_id: 'master'}
 
     response = client.get(url)
 
@@ -64,8 +64,7 @@ def test_replicated_middleware_force_state_by_header(client):
 
 
 def test_replicated_force_master_cookie(client):
-    settings = SettingsContainer()
-    settings.REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES=[200]
+    django_settings.REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES=[200]
 
     response = client.post('/')
 
