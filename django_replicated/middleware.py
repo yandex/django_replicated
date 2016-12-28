@@ -9,8 +9,8 @@ from django.core import urlresolvers
 from django.utils import six, functional
 
 from . import dbchecker
-from .utils import routers, get_object_name, SettingsContainer
-settings = SettingsContainer()
+from .utils import routers, get_object_name, SettingsProxy
+settings = SettingsProxy()
 
 
 class ReplicationMiddleware(object):
