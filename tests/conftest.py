@@ -13,6 +13,7 @@ pytestmark = pytest.mark.django_db
 def pytest_configure():
     settings.configure(**dict(replicated_settings.__dict__,
         DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3'},
+                   'master2': {'ENGINE': 'django.db.backends.sqlite3'},
                    'slave1': {'ENGINE': 'django.db.backends.sqlite3'},
                    'slave2': {'ENGINE': 'django.db.backends.sqlite3'},},
         REPLICATED_DATABASE_SLAVES=['slave1', 'slave2'],
