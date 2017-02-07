@@ -40,7 +40,30 @@ class DefaultDatabaseRouter(object):
         return self.DEFAULT_DB_ALIAS
 
 
+class OverridesDatabaseRouter(object):
+    """
+    An alternative / example router that looks for database override on a model
+    attribute.
+    """
+
+    _override_attr = '_route_database'
+
+    def __init__(self, *args, **kwargs):
+        from django.db import DEFAULT_DB_ALIAS
+        self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
+
+    def db_for_write(self, model, **hints):
+        override = getattr(model, self._override_attr, None)
+        if override:
+            return override
+        return self.DEFAULT_DB_ALIAS
+
+    def db_for_read(self, model, **hints):
+        return self.db_for_write(model, **hints)
+
+
 class Routers(object):
+
     def __getattr__(self, name):
         for r in db.router.routers:
             if hasattr(r, name):
