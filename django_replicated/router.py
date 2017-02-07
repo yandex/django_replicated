@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 import random
 from threading import local
+from .utils import import_string
+from django.utils.six import string_types
 
 
 class ReplicationRouter(object):
@@ -13,12 +15,25 @@ class ReplicationRouter(object):
 
         self._context = local()
 
+        self.DATABASES = settings.DATABASES
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.DOWNTIME = settings.REPLICATED_DATABASE_DOWNTIME
-        self.SLAVES = settings.REPLICATED_DATABASE_SLAVES or [DEFAULT_DB_ALIAS]
+        self.SLAVES_LEGACY = settings.REPLICATED_DATABASE_SLAVES or [DEFAULT_DB_ALIAS]
         self.CHECK_STATE_ON_WRITE = settings.REPLICATED_CHECK_STATE_ON_WRITE
 
-        self.all_allowed_aliases = [self.DEFAULT_DB_ALIAS] + self.SLAVES
+        wrapped_router_cls = settings.REPLICATED_WRAPPED_ROUTER
+        if isinstance(wrapped_router_cls, string_types):
+            wrapped_router_cls = import_string(wrapped_router_cls)
+        self.wrapped_router = wrapped_router_cls()
+
+        db_to_master = {}
+        for db in self.DATABASES:
+            slaves = self._get_db_slaves(db, with_fallback=False)
+            if not slaves:
+                continue
+            for slave in slaves:
+                db_to_master[slave] = db
+        self.db_to_master = db_to_master
 
     def _init_context(self):
         self._context.state_stack = []
@@ -70,38 +85,63 @@ class ReplicationRouter(object):
         '''
         self.context.state_stack.pop()
 
+    def _make_db_key(self, db, state=None):
+        state = self.state() if state is None else state
+        return "{}__{}".format(state, db)
+
+    def _get_db_slaves(self, db, with_fallback=True):
+        db_conf = self.DATABASES[db]
+        try:
+            return db_conf['SLAVES']
+        except KeyError:
+            if db == self.DEFAULT_DB_ALIAS:
+                return self.SLAVES_LEGACY
+            if with_fallback:
+                return [db]
+            return None
+
     def db_for_write(self, model, **hints):
         if self.CHECK_STATE_ON_WRITE and self.state() != 'master':
             raise RuntimeError('Trying to access master database in slave state')
 
-        self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
-
-        return self.DEFAULT_DB_ALIAS
+        db = self.wrapped_router.db_for_write(model, **hints)
+        assert db in self.DATABASES, \
+            "wrapped router's db_for_write should return a known database"
+        key = self._make_db_key(db)
+        self.context.chosen[key] = db
+        return db
 
     def db_for_read(self, model, **hints):
         if self.state() == 'master':
             return self.db_for_write(model, **hints)
 
-        if self.state() in self.context.chosen:
-            return self.context.chosen[self.state()]
+        db = self.wrapped_router.db_for_read(model, **hints)
+        assert db in self.DATABASES, \
+            "wrapped router's db_for_read should return a known database"
+        key = self._make_db_key(db)
 
-        slaves = self.SLAVES[:]
+        # Caching
+        try:
+            return self.context.chosen[key]
+        except KeyError:
+            pass
+
+        slaves = self._get_db_slaves(db)
+        slaves = slaves[:]  # copy
         random.shuffle(slaves)
-
         for slave in slaves:
             if self.is_alive(slave):
                 chosen = slave
                 break
         else:
-            chosen = self.DEFAULT_DB_ALIAS
+            chosen = db
 
-        self.context.chosen[self.state()] = chosen
+        self.context.chosen[key] = chosen
 
         return chosen
 
     def allow_relation(self, obj1, obj2, **hints):
-        for db in (obj1._state.db, obj2._state.db):
-            if db is not None and db not in self.all_allowed_aliases:
-                return False
-
-        return True
+        objs = [obj1, obj2]
+        dbs = [self.db_to_master.get(obj._state.db) for obj in objs]
+        db1, db2 = dbs
+        return db1 == db2
