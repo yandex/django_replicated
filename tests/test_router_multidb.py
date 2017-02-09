@@ -17,16 +17,16 @@ pytestmark = pytest.mark.django_db
 def multidb_settings(settings):
     settings.REPLICATED_WRAPPED_ROUTER = 'django_replicated.utils.OverridesDatabaseRouter'
     base_config = settings.DATABASES['default']
+    # Many slaves to increase chances that the stochastic behavior is tested.
+    slaves = ["db2_slave{}".format(idx) for idx in range(20)]
     extra_databases = dict(
         db2=dict(
             base_config,
-            # Many slaves to increase chances that the stochastic behavior is tested.
-            SLAVES=["db2_slave{}".format(idx) for idx in range(20)],
         ),
     )
     extra_databases.update(
-        (name, dict(base_config))
-        for name in extra_databases['db2']['SLAVES'])
+        (name, dict(base_config, SLAVE_TO='db2'))
+        for name in slaves)
     settings.DATABASES.update(extra_databases)  # XX: does the pytest-django's mockup handle this?
 
 

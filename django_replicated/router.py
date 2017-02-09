@@ -18,7 +18,7 @@ class ReplicationRouter(object):
         self.DATABASES = settings.DATABASES
         self.DEFAULT_DB_ALIAS = DEFAULT_DB_ALIAS
         self.DOWNTIME = settings.REPLICATED_DATABASE_DOWNTIME
-        self.SLAVES_LEGACY = settings.REPLICATED_DATABASE_SLAVES or [DEFAULT_DB_ALIAS]
+        self.SLAVES_LEGACY = settings.REPLICATED_DATABASE_SLAVES
         self.CHECK_STATE_ON_WRITE = settings.REPLICATED_CHECK_STATE_ON_WRITE
 
         wrapped_router_cls = settings.REPLICATED_WRAPPED_ROUTER
@@ -27,13 +27,27 @@ class ReplicationRouter(object):
         self.wrapped_router = wrapped_router_cls()
 
         db_to_master = {}
-        for db in self.DATABASES:
-            slaves = self._get_db_slaves(db, with_fallback=False)
-            if not slaves:
-                continue
-            for slave in slaves:
-                db_to_master[slave] = db
+        db_to_slaves = {}
+        for db, db_conf in self.DATABASES.items():
+            db_master = db_conf.get('SLAVE_TO')
+            db_slaves = None
+            try:
+                db_slaves = db_conf['SLAVES']
+            except KeyError:
+                if db == self.DEFAULT_DB_ALIAS:
+                    db_slaves = self.SLAVES_LEGACY
+            assert not (db_slaves and db_master), "cannot both be a slave and master"
+            if db_slaves:
+                db_to_slaves.setdefault(db, []).extend(db_slaves)
+            elif db_master:
+                db_to_slaves.setdefault(db_master, []).append(db)
+
+        for db, db_slaves in db_to_slaves.items():
+            for db_slave in db_slaves:
+                db_to_master[db_slave] = db
+
         self.db_to_master = db_to_master
+        self.db_to_slaves = db_to_slaves
 
     def _init_context(self):
         self._context.state_stack = []
@@ -89,17 +103,6 @@ class ReplicationRouter(object):
         state = self.state() if state is None else state
         return "{}__{}".format(state, db)
 
-    def _get_db_slaves(self, db, with_fallback=True):
-        db_conf = self.DATABASES[db]
-        try:
-            return db_conf['SLAVES']
-        except KeyError:
-            if db == self.DEFAULT_DB_ALIAS:
-                return self.SLAVES_LEGACY
-            if with_fallback:
-                return [db]
-            return None
-
     def db_for_write(self, model, **hints):
         if self.CHECK_STATE_ON_WRITE and self.state() != 'master':
             raise RuntimeError('Trying to access master database in slave state')
@@ -126,7 +129,7 @@ class ReplicationRouter(object):
         except KeyError:
             pass
 
-        slaves = self._get_db_slaves(db)
+        slaves = self.db_to_slaves.get(db) or [db]
         slaves = slaves[:]  # copy
         random.shuffle(slaves)
         for slave in slaves:
