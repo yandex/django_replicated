@@ -26,22 +26,19 @@ class ReplicationRouter(object):
             wrapped_router_cls = import_string(wrapped_router_cls)
         self.wrapped_router = wrapped_router_cls()
 
-        db_to_master = {}
         db_to_slaves = {}
         for db, db_conf in self.DATABASES.items():
             db_master = db_conf.get('SLAVE_TO')
-            db_slaves = None
-            try:
-                db_slaves = db_conf['SLAVES']
-            except KeyError:
-                if db == self.DEFAULT_DB_ALIAS:
-                    db_slaves = self.SLAVES_LEGACY
-            assert not (db_slaves and db_master), "cannot both be a slave and master"
-            if db_slaves:
-                db_to_slaves.setdefault(db, []).extend(db_slaves)
-            elif db_master:
+            if db_master:
                 db_to_slaves.setdefault(db_master, []).append(db)
 
+        if self.SLAVES_LEGACY:
+            def_slaves = db_to_slaves.get(self.DEFAULT_DB_ALIAS, [])
+            def_slaves.extend(self.SLAVES_LEGACY)
+            def_slaves = list(set(def_slaves))
+            db_to_slaves[self.DEFAULT_DB_ALIAS] = def_slaves
+
+        db_to_master = {}
         for db, db_slaves in db_to_slaves.items():
             for db_slave in db_slaves:
                 db_to_master[db_slave] = db
