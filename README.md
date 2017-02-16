@@ -22,13 +22,14 @@ SQL operations.
         DATABASES {
             'default': {
                 # ENGINE, HOST, etc.
-                'SLAVES': ['slave1', 'slave2']
             },
             'slave1': {
                 # ENGINE, HOST, etc.
+                'SLAVE_TO': 'default',
             },
             'slave2': {
                 # ENGINE, HOST, etc.
+                'SLAVE_TO': 'default',
             },
         }
 
