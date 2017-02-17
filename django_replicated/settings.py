@@ -9,7 +9,7 @@ REPLICATED_WRAPPED_ROUTER = 'django_replicated.utils.DefaultDatabaseRouter'
 REPLICATED_DATABASE_DOWNTIME = 60
 
 # List of slave database aliases. Default database is always master.
-# Warning: instead of this, use 'SLAVES' list on the database config in DATABASES.
+# Warning: instead of this, use 'SLAVE_TO' key on a database config in DATABASES.
 REPLICATED_DATABASE_SLAVES = []
 
 # View name to state mapping
