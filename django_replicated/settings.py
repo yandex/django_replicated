@@ -1,10 +1,15 @@
 # Cache backend name to store database state
 REPLICATED_CACHE_BACKEND = None
 
+# Router that will be used to select the master database.
+# No need to change it if only one master+slaves set is used.
+REPLICATED_WRAPPED_ROUTER = 'django_replicated.utils.DefaultDatabaseRouter'
+
 # Timeout for dead databases alive check
 REPLICATED_DATABASE_DOWNTIME = 60
 
-# List of slave database aliases. Default database is always master
+# List of slave database aliases. Default database is always master.
+# Warning: instead of this, use 'SLAVE_TO' key on a database config in DATABASES.
 REPLICATED_DATABASE_SLAVES = []
 
 # View name to state mapping

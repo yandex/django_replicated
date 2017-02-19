@@ -17,7 +17,7 @@ SQL operations.
 
         from django_replicated.settings import *
 
-1.  In settings.py configure your master and slave databases in a standard way:
+1.  In settings.py configure your master and slave databases in a mostly standard way:
 
         DATABASES {
             'default': {
@@ -25,15 +25,13 @@ SQL operations.
             },
             'slave1': {
                 # ENGINE, HOST, etc.
+                'SLAVE_TO': 'default',
             },
             'slave2': {
                 # ENGINE, HOST, etc.
+                'SLAVE_TO': 'default',
             },
         }
-
-1.  Teach django_replicated which databases are slaves:
-
-        REPLICATED_DATABASE_SLAVES = ['slave1', 'slave2']
 
     The 'default' database is always treated as master.
 
