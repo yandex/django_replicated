@@ -7,13 +7,15 @@ from functools import partial
 from django import db
 from django.conf import settings
 from django.core import urlresolvers
+from django.http import HttpResponse
 from django.utils import six, functional
+from django.utils.deprecation import MiddlewareMixin
 
 from . import dbchecker
 from .utils import routers, get_object_name
 
 
-class ReplicationMiddleware(object):
+class ReplicationMiddleware(MiddlewareMixin):
     '''
     Middleware for automatically switching routing state to
     master or slave depending on request method.
@@ -28,9 +30,11 @@ class ReplicationMiddleware(object):
     updated to match master. Thus first redirect after POST is pointed to
     master connection even if it only GETs data.
     '''
-    def __init__(self, forced_state=None):
+    def __init__(self, get_response=None, forced_state=None):
+        super(ReplicationMiddleware, self).__init__(get_response=get_response)
         self.forced_state = forced_state
 
+    
     def process_request(self, request):
         if self.forced_state is not None:
             state = self.forced_state
@@ -41,7 +45,7 @@ class ReplicationMiddleware(object):
             state = self.check_state_override(request, state)
 
         routers.init(state)
-
+        
     def process_response(self, request, response):
         self.handle_redirect_after_write(request, response)
         return response
@@ -91,7 +95,7 @@ class ReplicationMiddleware(object):
                             max_age=settings.REPLICATED_FORCE_MASTER_COOKIE_MAX_AGE)
 
 
-class ReadOnlyMiddleware(object):
+class ReadOnlyMiddleware(MiddlewareMixin):
     def process_request(self, request):
         request.service_is_readonly = functional.SimpleLazyObject(self.is_service_read_only)
 
