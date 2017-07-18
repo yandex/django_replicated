@@ -4,10 +4,13 @@ from __future__ import unicode_literals
 from django.conf.urls import url
 from django.http import HttpResponseRedirect, HttpResponse
 from django.views.generic import View
+from django_replicated.utils import routers
 
 
 def view(request):
-    return HttpResponseRedirect('/')
+    response = HttpResponseRedirect('/')
+    response['Router-Used'] = routers.state()
+    return response
 
 
 def just_updated_view(request):

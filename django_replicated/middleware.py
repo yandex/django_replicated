@@ -43,6 +43,7 @@ class ReplicationMiddleware(object):
         routers.init(state)
 
     def process_response(self, request, response):
+        routers.reset()
         self.handle_redirect_after_write(request, response)
         return response
 

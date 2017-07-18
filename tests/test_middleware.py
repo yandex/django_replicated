@@ -22,13 +22,16 @@ def _request():
 
 @pytest.mark.parametrize('method', ['get', 'head'])
 def test_replicated_middleware_slave_state(client, method):
-    client.generic(method, '/')
+    response = client.generic(method, '/')
+    assert response['Router-Used'] == 'slave'
 
-    assert routers.state() == 'slave'
+    # Router state is reset to 'master' after request is processed
+    assert routers.state() == 'master'
 
 
 def test_replicated_middleware_master_state(client):
-    client.post('/')
+    response = client.post('/')
+    assert response['Router-Used'] == 'master'
 
     assert routers.state() == 'master'
 
@@ -54,12 +57,14 @@ def test_replicated_middleware_force_state_by_header(client):
     response = client.get('/', **{settings.REPLICATED_FORCE_STATE_HEADER: 'master'})
 
     assert response.status_code == 302
+    assert response['Router-Used'] == 'master'
     assert routers.state() == 'master'
 
     response = client.post('/', **{settings.REPLICATED_FORCE_STATE_HEADER: 'slave'})
 
     assert response.status_code == 302
-    assert routers.state() == 'slave'
+    assert response['Router-Used'] == 'slave'
+    assert routers.state() == 'master'
 
 
 def test_replicated_force_master_cookie(client):
@@ -103,4 +108,3 @@ def test_readonly_middleware_is_writable(_request):
         ReadOnlyMiddleware().process_request(_request)
 
         assert _request.service_is_readonly
-
