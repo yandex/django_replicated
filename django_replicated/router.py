@@ -20,7 +20,7 @@ class ReplicationRouter(object):
 
         self.all_allowed_aliases = [self.DEFAULT_DB_ALIAS] + self.SLAVES
 
-    def _init_context(self):
+    def reset(self):
         self._context.state_stack = []
         self._context.chosen = {}
         self._context.state_change_enabled = True
@@ -29,11 +29,11 @@ class ReplicationRouter(object):
     @property
     def context(self):
         if not getattr(self._context, 'inited', False):
-            self._init_context()
+            self.reset()
         return self._context
 
     def init(self, state):
-        self._init_context()
+        self.reset()
         self.use_state(state)
 
     def is_alive(self, db_name):
