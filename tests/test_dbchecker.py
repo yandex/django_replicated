@@ -9,11 +9,11 @@ from django_replicated.dbchecker import cache, check_db, hostname
 
 
 def test_check_success():
-    assert check_db(MagicMock(return_value=True), 'default') == True
+    assert check_db(MagicMock(return_value=True), 'default') is True
 
 
 def test_check_fail():
-    assert check_db(MagicMock(return_value=False), 'default') == False
+    assert check_db(MagicMock(return_value=False), 'default') is False
 
 
 def test_check_retry():

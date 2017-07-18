@@ -7,15 +7,14 @@ from functools import partial
 
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
-from django.utils import timezone
 from django.db import connections
 
 try:
     from django.core.cache import get_cache
-except ImportError: # Django >= 1.7
+except ImportError:  # Django >= 1.7
     from django.core.cache import caches
 
-    get_cache = lambda alias: caches[alias]
+    def get_cache(alias): return caches[alias]
 
 
 from .utils import get_object_name
