@@ -30,7 +30,10 @@ hostname = socket.getfqdn()
 def is_alive(connection):
     if connection.connection is not None and hasattr(connection.connection, 'ping'):
         log.debug('Ping db: %s', connection.alias)
-        connection.connection.ping()
+        try:
+            connection.connection.ping(True)
+        except TypeError:
+            connection.connection.ping()
     else:
         log.debug('Get cursor for db: %s', connection.alias)
         connection.cursor()
