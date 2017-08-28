@@ -98,6 +98,9 @@ def check_db(checker, db_name, cache_seconds=None, number_of_tries=1, force=Fals
             count, db_name, checker_name, result
         )
 
+        if result:
+            break
+
     if not result and cache_seconds is not None:
         cache.set(cache_key, dead_mark, cache_seconds)
 
