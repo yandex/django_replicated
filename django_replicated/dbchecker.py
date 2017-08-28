@@ -30,7 +30,13 @@ hostname = socket.getfqdn()
 def is_alive(connection):
     if connection.connection is not None and hasattr(connection.connection, 'ping'):
         log.debug('Ping db: %s', connection.alias)
-        connection.connection.ping()
+        try:
+            # Since MySQL-python 1.2.2 connection.ping()
+            # takes an optional boolean argument to enable automatic reconnection.
+            # https://github.com/farcepest/MySQLdb1/blob/d34fac681487541e4be07e6978e0db233faf8252/HISTORY#L103
+            connection.connection.ping(True)
+        except TypeError:
+            connection.connection.ping()
     else:
         log.debug('Get cursor for db: %s', connection.alias)
         connection.cursor()
