@@ -2,6 +2,7 @@
 .cache
 .idea
 .tox
+.git
 dist
 build
 MANIFEST
