@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import inspect
+import fnmatch
 from functools import partial
 
 from django import db
@@ -64,10 +65,13 @@ class ReplicationMiddleware(object):
                                      get_object_name(match.func))
 
             for lookup_view, forced_state in six.iteritems(overrides):
-                if match.url_name == lookup_view or import_path == lookup_view:
+                if (
+                    match.url_name == lookup_view or
+                    import_path == lookup_view or
+                    fnmatch.fnmatchcase(request.path_info, lookup_view)
+                ):
                     state = forced_state
                     break
-
         return state
 
     def handle_redirect_after_write(self, request, response):

@@ -29,6 +29,7 @@ class TestCallable(object):
 
 urlpatterns = [
     url(r'^$', view),
+    url(r'^admin/auth/$', TestView.as_view()),
     url(r'^just_updated$', just_updated_view),
     url(r'^with_name$', view, name='view-name'),
     url(r'^as_class$', TestView.as_view()),
