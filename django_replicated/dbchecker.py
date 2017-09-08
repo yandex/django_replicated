@@ -5,15 +5,16 @@ import logging
 import socket
 from functools import partial
 
+import django
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.db import connections
 
-try:
+if django.get_version() < '1.7':
+    # https://docs.djangoproject.com/en/1.7/topics/cache/#django.core.cache.get_cache
     from django.core.cache import get_cache
-except ImportError:  # Django >= 1.7
+else:
     from django.core.cache import caches
-
     def get_cache(alias): return caches[alias]
 
 
