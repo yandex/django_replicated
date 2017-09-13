@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import inspect
+import logging
 import fnmatch
 from functools import partial
 
@@ -23,6 +24,9 @@ except ImportError:
 
 from . import dbchecker
 from .utils import routers, get_object_name
+
+
+log = logging.getLogger(__name__)
 
 
 class ReplicationMiddleware(MiddlewareMixin):
@@ -48,12 +52,17 @@ class ReplicationMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if self.forced_state is not None:
             state = self.forced_state
+            log.debug('state by .forced_state attr: %s', state)
         elif request.META.get(settings.REPLICATED_FORCE_STATE_HEADER) in ('master', 'slave'):
             state = request.META[settings.REPLICATED_FORCE_STATE_HEADER]
+            log.debug('state by header: %s', state)
         else:
             state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
+            log.debug('state by request method: %s', state)
             state = self.check_state_override(request, state)
+            log.debug('state after override: %s', state)
 
+            log.debug('init state: %s', state)
         routers.init(state)
 
     def set_non_atomic_dbs(self, view):
@@ -118,6 +127,7 @@ class ReplicationMiddleware(MiddlewareMixin):
         '''
         force_master_codes = settings.REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES
         if response.status_code in force_master_codes and routers.state() == 'master':
+            log.debug('set force master cookie for %s', request.path)
             self.set_force_master_cookie(response)
         else:
             if settings.REPLICATED_FORCE_MASTER_COOKIE_NAME in request.COOKIES:

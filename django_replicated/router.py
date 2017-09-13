@@ -1,8 +1,11 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
+import logging
 import random
 from threading import local
+
+log = logging.getLogger(__name__)
 
 
 class ReplicationRouter(object):
@@ -76,6 +79,7 @@ class ReplicationRouter(object):
 
         self.context.chosen['master'] = self.DEFAULT_DB_ALIAS
 
+        log.debug('db_for_write: %s', self.DEFAULT_DB_ALIAS)
         return self.DEFAULT_DB_ALIAS
 
     def db_for_read(self, *args, **kwargs):
@@ -97,6 +101,7 @@ class ReplicationRouter(object):
 
         self.context.chosen[self.state()] = chosen
 
+        log.debug('db_for_read: %s', chosen)
         return chosen
 
     def allow_relation(self, obj1, obj2, **hints):

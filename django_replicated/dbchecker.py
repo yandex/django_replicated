@@ -77,14 +77,14 @@ def check_db(checker, db_name, cache_seconds=None, number_of_tries=1, force=Fals
 
         if is_dead:
             log.debug(
-                'Last check "%s" %s was less than %d ago, no check needed',
+                'Check "%s" %s was failed less than %d ago, no check needed',
                 checker_name, db_name, cache_seconds
             )
 
             return False
         else:
             log.debug(
-                'Last check "%s" %s was more than %d ago, checking again',
+                'Last check "%s" %s succeeded or was more than %d ago, checking again',
                 db_name, checker_name, cache_seconds
             )
     else:
