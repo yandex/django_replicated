@@ -65,8 +65,8 @@ class ReplicationMiddleware(object):
             self.set_non_atomic_dbs(view)
 
     def process_response(self, request, response):
-        routers.reset()
         self.handle_redirect_after_write(request, response)
+        routers.reset()
         return response
 
     def check_state_override(self, request, state):

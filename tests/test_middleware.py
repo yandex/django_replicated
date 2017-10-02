@@ -38,6 +38,11 @@ def test_replicated_middleware_master_state(client):
     assert client.cookies[settings.REPLICATED_FORCE_MASTER_COOKIE_NAME].value == 'true'
 
 
+def test_does_not_set_force_master_cookie_on_get(client):
+    client.get('/')
+    assert client.cookies == {}
+
+
 @pytest.mark.parametrize('url,view_id', [('/', 'tests._test_urls.view'),
                                          ('/with_name', 'view-name'),
                                          ('/as_class', 'tests._test_urls.TestView'),
