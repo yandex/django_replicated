@@ -108,3 +108,68 @@ def test_readonly_middleware_is_writable(_request):
         ReadOnlyMiddleware().process_request(_request)
 
         assert _request.service_is_readonly
+
+
+def test_disable_manage_atomic_requests(_request):
+    with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=False):
+        with patch('django_replicated.middleware.ReplicationMiddleware.set_non_atomic_dbs') as set_non_atomic_dbs:
+            from django_replicated.middleware import ReplicationMiddleware
+
+            view = lambda: None
+            ReplicationMiddleware().process_view(_request, view)
+            set_non_atomic_dbs.assert_not_called()
+
+
+def test_non_atomic_view(client):
+    from ._test_urls import non_atomic_view as view
+
+    with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=True):
+        assert not hasattr(view, '_replicated_view_default_non_atomic_dbs')
+
+        with patch('django.db.transaction.atomic') as atomic:
+            atomic.return_value = lambda view: view
+
+            client.post('/non_atomic_view')
+            atomic.assert_not_called()
+            assert view._replicated_view_default_non_atomic_dbs == {'default'}
+            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'}
+
+        with patch('django.db.transaction.atomic') as atomic:
+            atomic.return_value = lambda view: view
+
+            response = client.get('/non_atomic_view')
+            atomic.assert_not_called()
+            assert view._replicated_view_default_non_atomic_dbs == {'default'}
+            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+
+
+def test_atomic_view(client):
+    from ._test_urls import view
+
+    with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=True):
+        assert not hasattr(view, '_non_atomic_requests')
+        assert not hasattr(view, '_replicated_view_default_non_atomic_dbs')
+
+        with patch('django.db.transaction.atomic') as atomic:
+            atomic.return_value = lambda view: view
+
+            response = client.get('/')
+            atomic.assert_not_called()
+            assert view._replicated_view_default_non_atomic_dbs == set()
+            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+
+        with patch('django.db.transaction.atomic') as atomic:
+            atomic.return_value = lambda view: view
+
+            client.post('/')
+            atomic.assert_called_once_with(using='default')
+            assert view._replicated_view_default_non_atomic_dbs == set()
+            assert view._non_atomic_requests == {'slave1', 'slave2'}
+
+        with patch('django.db.transaction.atomic') as atomic:
+            atomic.return_value = lambda view: view
+
+            response = client.get('/')
+            atomic.assert_called_once_with(using='default')
+            assert view._replicated_view_default_non_atomic_dbs == set()
+            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}

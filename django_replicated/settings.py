@@ -30,3 +30,6 @@ REPLICATED_CHECK_STATE_ON_WRITE = True
 
 # Status codes on which set cookie for read-after-write workaround
 REPLICATED_FORCE_MASTER_COOKIE_STATUS_CODES = (302, 303)
+
+
+REPLICATED_MANAGE_ATOMIC_REQUESTS = False

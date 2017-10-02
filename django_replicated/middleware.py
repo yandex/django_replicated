@@ -42,6 +42,28 @@ class ReplicationMiddleware(object):
 
         routers.init(state)
 
+    def set_non_atomic_dbs(self, view):
+        default_attr = '_replicated_view_default_non_atomic_dbs'
+        default_set = getattr(view, default_attr, None)
+        # If default_set is None then this first request. Set default.
+        if default_set is None:
+            view_set = getattr(view, '_non_atomic_requests', set())
+            setattr(view, default_attr, view_set)
+            default_set = view_set
+
+        all_allowed_aliases = routers.all_allowed_aliases
+        # If state master db_for_read() == db_for_write()
+        current_alias = routers.db_for_read()
+        not_used_aliases = set(
+            a for a in all_allowed_aliases
+            if a != current_alias
+        )
+        view._non_atomic_requests = not_used_aliases | default_set
+
+    def process_view(self, request, view, *args):
+        if settings.REPLICATED_MANAGE_ATOMIC_REQUESTS:
+            self.set_non_atomic_dbs(view)
+
     def process_response(self, request, response):
         routers.reset()
         self.handle_redirect_after_write(request, response)
