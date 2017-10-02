@@ -163,3 +163,8 @@ names:
 * `db_is_not_read_only` check renamed to `db_is_writable`.
 * Added state checking before writes. Enabled by default.
 * Now allows relations between objects in same master-slave db set
+
+
+## SIMILAR LIBRARIES
+
+* [django-multidb-router](https://github.com/jbalogh/django-multidb-router)
