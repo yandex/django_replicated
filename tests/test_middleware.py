@@ -47,6 +47,7 @@ def test_does_not_set_force_master_cookie_on_get(client):
                                          ('/admin/auth/', '/admin/auth/'),
                                          ('/admin/auth/', '/admin/*'),
                                          ('/with_name', 'view-name'),
+                                         ('/namespace/with-namespace', 'namespace:with-namespace'),
                                          ('/as_class', 'tests._test_urls.TestView'),
                                          ('/as_callable', 'tests._test_urls.TestCallable'),
                                          ('/as_instancemethod', 'tests._test_urls.instancemethodview')])
