@@ -44,6 +44,8 @@ def test_does_not_set_force_master_cookie_on_get(client):
 
 
 @pytest.mark.parametrize('url,view_id', [('/', 'tests._test_urls.view'),
+                                         ('/admin/auth/', '/admin/auth/'),
+                                         ('/admin/auth/', '/admin/*'),
                                          ('/with_name', 'view-name'),
                                          ('/as_class', 'tests._test_urls.TestView'),
                                          ('/as_callable', 'tests._test_urls.TestCallable')])
