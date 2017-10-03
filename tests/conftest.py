@@ -21,6 +21,8 @@ def pytest_configure():
         'DATABASE_ROUTERS': ['django_replicated.router.ReplicationRouter'],
         'MIDDLEWARE_CLASSES': [
             'django_replicated.middleware.ReplicationMiddleware'],
+        'MIDDLEWARE': [
+            'django_replicated.middleware.ReplicationMiddleware'],
         'ROOT_URLCONF': 'tests._test_urls',
     })
 
