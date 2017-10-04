@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.db import connections
 
-if django.get_version() < '1.7':
+if django.VERSION < (1, 7):
     # https://docs.djangoproject.com/en/1.7/topics/cache/#django.core.cache.get_cache
     from django.core.cache import get_cache
 else:
