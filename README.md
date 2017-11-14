@@ -53,28 +53,27 @@ SQL operations.
 
 Django_replicated routes SQL queries into different databases based not only on
 their type (insert/update/delete vs. select) but also on its own current state.
-This is done to avoid situation when in a single logical operations you're
-doing both writes and reads. If all writes would go into one database and reads
-would be from another one then you won't have a consistent view of the world
-because of two reasons:
+This is done to support the situation in which there are both writes and reads
+in a single logical operation. If the writes and reads used separate databases,
+the result would be inconsistent because:
 
-- when using transactions the result of writes won't be replicated into a slave
-  until commit
-- even in a non-transactional environment there's always a certain lag between
-  updates in a master and in slaves
+- when using transactions, the result of the writes will not be delivered to
+  slaves until committed;
+- even in a non-transactional environment, there is always a certain lag before
+  the updates reach slaves.
 
 Django_replicated expects you to define what these logical operations are
 doing: writing/reading or only reading. Then it will try to use slave databases
 only for purely reading operations.
 
-To define this there are several methods.
+There are several methods to define those.
 
 
 ### Middleware
 
-If your project is built in accordance to principles of HTTP where GET requests
-don't cause changes in the system (unless by side effects) then most of the
-work is done by simply using a middleware :
+If your project is built in accordance with principles of HTTP where GET requests
+do not cause changes in the system (unless by side effects) then most of the
+work is done by simply using a middleware:
 
     MIDDLEWARE_CLASSES = [
         ...
@@ -87,21 +86,21 @@ HEAD requests and to use a master otherwise.
 
 While this is usually enough there are cases when DB access is not controlled
 explicitly by your business logic. Good examples are implicit creation of
-sessions on first access, writing some bookkeeping info, implicit registration
+sessions on the first access, writing some bookkeeping info, implicit registration
 of a user account somewhere inside the system. These things can happen at
 arbitrary moments of time, including during GET requests.
 
-Generally django_replicated handles this by always providing a master databases
-for write operations. If this is not enough (say you still want to read a
-newly created session and want to make sure that it will be read from a master)
-you can always instruct Django ORM to [use a certain database][2].
+Generally, django_replicated handles this by always using the master database
+for write operations. If this is not enough (e.g., if you want to make sure a
+newly created session is read from the master), you can always instruct
+Django ORM to [use a certain database][2].
 
 [2]: http://docs.djangoproject.com/en/dev/topics/db/multi-db/#manually-selecting-a-database
 
 
 ### Decorators
 
-If your system doesn't depend on the method of HTTP request to do writes and
+If your system does not depend on the method of HTTP request to do writes and
 reads you can use decorators to wrap individual views into master or slave
 replication modes:
 
@@ -121,22 +120,22 @@ replication modes:
 
 There is a special case that needs addressing when working with asynchronous
 replication scheme. Replicas can lag behind a master database on receiving
-updates. In practice this mean that after submitting a POST form that redirects
+updates. In practice, this means that after submitting a POST form that redirects
 to a page with updated data this page may be requested from a slave replica
-that wasn't updated yet. And the user will have an impression that the submit
-didn't work.
+that was not updated yet. And the user will have an impression that the submit
+did not work.
 
-To overcome this problem both ReplicationMiddleware and decorators support
+To overcome this problem both `ReplicationMiddleware` and decorators support
 special technique where handling of a GET request resulting from a redirect
 after a POST is explicitly routed to a master database.
 
 
 ### Global overrides
 
-In some cases it might be necessary to override how the middleware chooses
-a target database based on the HTTP request method. For example you might want to
+In some cases, it might be necessary to override how the middleware chooses
+a target database based on the HTTP request method. For example, you might want to
 route certain POST requests to a slave if you know that the request handler
-doesn't do any writes. The settings variable `REPLICATED_VIEWS_OVERRIDES` holds
+does not do any writes. The settings variable `REPLICATED_VIEWS_OVERRIDES` holds
 the mapping of view names (urlpatterns names) or view import paths or url path 
 to database names:
 
@@ -152,11 +151,11 @@ to database names:
 
 ### 2.0 Backward incompatible changes
 * Default `django_replicated.settings` file was added.
-* Some settings variables where renamed:
+* Some settings variables were renamed:
 
         DATABASE_SLAVES -> REPLICATED_DATABASE_SLAVES
         DATABASE_DOWNTIME -> REPLICATED_DATABASE_DOWNTIME
-* Another settings variables where deleted:
+* Another setting variable was deleted:
 
         REPLICATED_SELECT_READ_ONLY
 * Router import path changed to `django_replicated.router.ReplicationRouter`.
