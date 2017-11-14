@@ -19,7 +19,7 @@ REPLICATED_READ_ONLY_TRIES = 1
 # Cookie name for read-after-write workaround
 REPLICATED_FORCE_MASTER_COOKIE_NAME = 'just_updated'
 
-# Cookie life time in minutes
+# Cookie life time in seconds
 REPLICATED_FORCE_MASTER_COOKIE_MAX_AGE = 5
 
 # Header name for forcing state switch
