@@ -152,33 +152,29 @@ def test_non_atomic_view(client):
             assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
 
 
-def test_atomic_view(client):
-    from ._test_urls import view
-
+@pytest.mark.parametrize('url', ['/', '/with_name', '/as_class', '/as_callable', '/as_instancemethod'])
+def test_atomic_view(client, url):
     with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=True):
-        assert not hasattr(view, '_non_atomic_requests')
-        assert not hasattr(view, '_replicated_view_default_non_atomic_dbs')
-
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            response = client.get('/')
+            response = client.get(url)
             atomic.assert_not_called()
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == ','.join(sorted({'default', 'slave1', 'slave2'} - {response['DB-Used']}))
 
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            client.post('/')
+            response = client.post(url)
             atomic.assert_called_once_with(using='default')
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'slave1', 'slave2'}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == 'slave1,slave2'
 
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            response = client.get('/')
+            response = client.get(url)
             atomic.assert_called_once_with(using='default')
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == ','.join(sorted({'default', 'slave1', 'slave2'} - {response['DB-Used']}))
