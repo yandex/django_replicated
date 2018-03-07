@@ -21,12 +21,20 @@ def just_updated_view(request):
 
 class TestView(View):
     def get(self, request):
-        return HttpResponseRedirect('/')
+        return view(request)
 
 
 class TestCallable(object):
     def __call__(self, request):
-        return HttpResponseRedirect('/')
+        return view(request)
+
+
+class TestInstanceMethod(object):
+    def instancemethodview(self, request):
+        return view(request)
+
+
+instance_view = TestInstanceMethod()
 
 
 @transaction.non_atomic_requests
@@ -43,5 +51,6 @@ urlpatterns = [
     url(r'^with_name$', view, name='view-name'),
     url(r'^as_class$', TestView.as_view()),
     url(r'^as_callable$', TestCallable()),
+    url(r'^as_instancemethod$', instance_view.instancemethodview),
     url(r'^non_atomic_view$', non_atomic_view),
 ]
