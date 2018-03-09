@@ -33,7 +33,6 @@ def just_updated_view(request):
 class TestView(View):
     def get(self, request):
         response = get_response()
-        set_non_atomic_attributes(response, self.get)
         return response
 
 

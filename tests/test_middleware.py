@@ -152,7 +152,7 @@ def test_non_atomic_view(client):
             assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
 
 
-@pytest.mark.parametrize('url', ['/', '/with_name', '/as_class', '/as_callable', '/as_instancemethod'])
+@pytest.mark.parametrize('url', ['/', '/with_name', '/as_callable', '/as_instancemethod'])
 def test_atomic_view(client, url):
     with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=True):
         with patch('django.db.transaction.atomic') as atomic:
