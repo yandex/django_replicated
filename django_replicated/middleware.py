@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import inspect
 import logging
 import fnmatch
+import types
 from functools import partial
 
 from django import db
@@ -66,6 +67,9 @@ class ReplicationMiddleware(MiddlewareMixin):
         routers.init(state)
 
     def set_non_atomic_dbs(self, view):
+        if isinstance(view, types.MethodType):
+            view = six.get_method_function(view)
+
         default_attr = '_replicated_view_default_non_atomic_dbs'
         default_set = getattr(view, default_attr, None)
         # If default_set is None then this first request. Set default.

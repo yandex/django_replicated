@@ -40,7 +40,7 @@ class TestView(View):
 class TestCallable(object):
     def __call__(self, request):
         response = get_response()
-        set_non_atomic_attributes(response, self.__call__)
+        set_non_atomic_attributes(response, self)
         return response
 
 
