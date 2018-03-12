@@ -48,7 +48,8 @@ def test_does_not_set_force_master_cookie_on_get(client):
                                          ('/admin/auth/', '/admin/*'),
                                          ('/with_name', 'view-name'),
                                          ('/as_class', 'tests._test_urls.TestView'),
-                                         ('/as_callable', 'tests._test_urls.TestCallable')])
+                                         ('/as_callable', 'tests._test_urls.TestCallable'),
+                                         ('/as_instancemethod', 'tests._test_urls.instancemethodview')])
 def test_replicated_middleware_view_overrides(client, settings, url, view_id):
     routers.init('slave')
 
@@ -57,6 +58,7 @@ def test_replicated_middleware_view_overrides(client, settings, url, view_id):
     response = client.get(url)
 
     assert response.status_code == 302
+    assert response['Router-Used'] == 'master'
     assert routers.state() == 'master'
 
 
@@ -150,33 +152,29 @@ def test_non_atomic_view(client):
             assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
 
 
-def test_atomic_view(client):
-    from ._test_urls import view
-
+@pytest.mark.parametrize('url', ['/', '/with_name', '/as_callable', '/as_instancemethod'])
+def test_atomic_view(client, url):
     with override_settings(REPLICATED_MANAGE_ATOMIC_REQUESTS=True):
-        assert not hasattr(view, '_non_atomic_requests')
-        assert not hasattr(view, '_replicated_view_default_non_atomic_dbs')
-
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            response = client.get('/')
+            response = client.get(url)
             atomic.assert_not_called()
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == ','.join(sorted({'default', 'slave1', 'slave2'} - {response['DB-Used']}))
 
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            client.post('/')
+            response = client.post(url)
             atomic.assert_called_once_with(using='default')
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'slave1', 'slave2'}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == 'slave1,slave2'
 
         with patch('django.db.transaction.atomic') as atomic:
             atomic.return_value = lambda view: view
 
-            response = client.get('/')
+            response = client.get(url)
             atomic.assert_called_once_with(using='default')
-            assert view._replicated_view_default_non_atomic_dbs == set()
-            assert view._non_atomic_requests == {'default', 'slave1', 'slave2'} - {response['DB-Used']}
+            assert response['Default-Non-Atomic'] == ''
+            assert response['Non-Atomic'] == ','.join(sorted({'default', 'slave1', 'slave2'} - {response['DB-Used']}))
