@@ -1,7 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.http import HttpResponseRedirect, HttpResponse
 from django.views.generic import View
 from django_replicated.utils import routers
@@ -60,6 +60,10 @@ def non_atomic_view(request):
     return response
 
 
+included_patterns = [
+    url(r'^with-namespace$', view, name='with-namespace'),
+]
+
 urlpatterns = [
     url(r'^$', view),
     url(r'^admin/auth/$', TestView.as_view()),
@@ -69,4 +73,6 @@ urlpatterns = [
     url(r'^as_callable$', TestCallable()),
     url(r'^as_instancemethod$', instance_view.instancemethodview),
     url(r'^non_atomic_view$', non_atomic_view),
+    url(r'^namespace/', include(included_patterns, 'namespace')),
 ]
+
