@@ -40,27 +40,28 @@ def is_alive(connection):
             connection.connection.ping()
     else:
         log.debug('Get cursor for db: %s', connection.alias)
-        connection.cursor()
+        with connection.cursor():
+            pass
 
     return True
 
 
 def is_writable(connection):
-    cursor = connection.cursor()
+    result = True
+    with connection.cursor():
+        if connection.vendor == 'mysql':
+            cursor.execute('SELECT @@read_only')
+            result = not int(cursor.fetchone()[0])
 
-    if connection.vendor == 'mysql':
-        cursor.execute('SELECT @@read_only')
-        return not int(cursor.fetchone()[0])
+        elif connection.vendor in ('postgresql', 'postgresql_psycopg2', 'postgis'):
+            cursor.execute('SELECT pg_is_in_recovery()')
+            result = not cursor.fetchone()[0]
 
-    elif connection.vendor in ('postgresql', 'postgresql_psycopg2', 'postgis'):
-        cursor.execute('SELECT pg_is_in_recovery()')
-        return not cursor.fetchone()[0]
+        elif connection.vendor == 'oracle':
+            cursor.execute('SELECT open_mode FROM v$database')
+            result = cursor.fetchone()[0] != 'READ ONLY'
 
-    elif connection.vendor == 'oracle':
-        cursor.execute('SELECT open_mode FROM v$database')
-        return cursor.fetchone()[0] != 'READ ONLY'
-
-    return True
+    return result
 
 
 def check_db(checker, db_name, cache_seconds=None, number_of_tries=1, force=False):
