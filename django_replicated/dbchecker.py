@@ -48,7 +48,7 @@ def is_alive(connection):
 
 def is_writable(connection):
     result = True
-    with connection.cursor():
+    with connection.cursor() as cursor:
         if connection.vendor == 'mysql':
             cursor.execute('SELECT @@read_only')
             result = not int(cursor.fetchone()[0])
