@@ -1,3 +1,5 @@
+### <In English>
+
 ## SUMMARY
 
 Django_replicated is a Django [database router][1] designed to support more or
@@ -172,6 +174,10 @@ to database names:
 
 
 
+
+
+
+#### <In korea>
 ## 요약
 
 Django_replicated는 다소간 자동 마스터 - 슬레이브 복제를 지원하도록 설계된 Django[database router] [1]입니다.
