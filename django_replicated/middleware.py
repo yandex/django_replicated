@@ -58,8 +58,12 @@ class ReplicationMiddleware(MiddlewareMixin):
             state = request.META[settings.REPLICATED_FORCE_STATE_HEADER]
             log.debug('state by header: %s', state)
         else:
-            state = 'slave' if request.method in ['GET', 'HEAD'] else 'master'
+            state = 'master'
+            if request.method in ('GET', 'OPTIONS', 'TRACE', 'HEAD'):
+                state = 'slave'
+
             log.debug('state by request method: %s', state)
+
             state = self.check_state_override(request, state)
             log.debug('state after override: %s', state)
 
