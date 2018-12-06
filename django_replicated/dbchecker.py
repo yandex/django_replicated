@@ -101,7 +101,7 @@ def check_db(checker, db_name, cache_seconds=None, number_of_tries=1, force=Fals
             result = checker(connection)
         except Exception:
             if count == number_of_tries:
-                log.exception('Error verifying %s: %s', checker_name, db_name)
+                log.warning('Error verifying %s: %s', checker_name, db_name)
 
             result = False
 
