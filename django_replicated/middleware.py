@@ -6,10 +6,11 @@ import logging
 import fnmatch
 import types
 from functools import partial
+import six
 
 from django import db
 from django.conf import settings
-from django.utils import six, functional
+from django.utils import functional
 
 try:  # django 1.10+
     from django import urls
