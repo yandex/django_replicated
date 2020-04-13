@@ -101,6 +101,10 @@ class ReplicationMiddleware(MiddlewareMixin):
         routers.reset()
         return response
 
+    def process_exception(self, request, exception):
+        if settings.REPLICATED_RESET_ON_EXCEPTION:
+            routers.reset()
+
     def check_state_override(self, request, state):
         '''
         Used to check if a web request should use a master or slave
