@@ -1,5 +1,7 @@
 # coding: utf-8
 
+import contextlib
+
 import pytest
 from mock import patch
 
@@ -7,6 +9,7 @@ from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.conf import settings
 
+from django_replicated.dbchecker import is_writable, is_alive
 from django_replicated.middleware import ReadOnlyMiddleware
 from django_replicated.utils import routers
 
@@ -102,22 +105,102 @@ def test_readonly_middleware_check_db(_request):
         assert check_db_mock.call_count == 2
 
 
+class CursorMock(object):
+    def __init__(self):
+        self.is_closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_cls, exc, tb):
+        self.close()
+        return False
+
+    def close(self):
+        self.is_closed = True
+
+    def execute(self, command):
+        pass
+
+    def fetchone(self):
+        return [True]
+
+
+class ConnectionMock(object):
+    vendor = 'postgresql'
+    connection = None
+    alias = ''
+
+    def __init__(self):
+        self.cursor_mocks = []
+
+    def cursor(self):
+        cursor_mock = CursorMock()
+
+        self.cursor_mocks.append(cursor_mock)
+
+        return cursor_mock
+
+    def cursors_is_closed(self):
+        return all(cursor.is_closed for cursor in self.cursor_mocks)
+
+
+class ConnectionHandlerMock(object):
+    def __init__(self):
+        self.connection_mocks = None
+
+    def __getitem__(self, item):
+        assert item == 'default'
+
+        self.connection_mock = ConnectionMock()
+        return self.connection_mock
+
+
+class CacheMock(object):
+    def get(self, key):
+        return None
+
+    def set(self, *args):
+        pass
+
+
+@contextlib.contextmanager
+def mock_connections():
+    with patch('django_replicated.dbchecker.cache', CacheMock()):
+        with patch('django_replicated.dbchecker.connections', ConnectionHandlerMock()) as connections_mock:
+            yield
+
+        assert connections_mock.connection_mock.cursors_is_closed()
+
+
 def test_readonly_middleware_is_alive(_request):
     with patch('django_replicated.dbchecker.is_alive') as is_alive_mock:
-        is_alive_mock.return_value = False
+        is_alive_mock.side_effect = is_alive
 
-        ReadOnlyMiddleware().process_request(_request)
+        with mock_connections():
+            ReadOnlyMiddleware().process_request(_request)
+            assert _request.service_is_readonly
 
-        assert _request.service_is_readonly
+        assert is_alive_mock.call_count == 1
 
 
-def test_readonly_middleware_is_writable(_request):
-    with patch('django_replicated.dbchecker.is_writable') as is_writable_mock:
-        is_writable_mock.return_value = False
+def test_readonly_middleware_is_writable(_request, settings):
+    settings.REPLICATED_READ_ONLY_DOWNTIME = 1
+    settings.REPLICATED_READ_ONLY_TRIES = 1
 
-        ReadOnlyMiddleware().process_request(_request)
+    with patch('django_replicated.dbchecker.is_alive') as is_alive_mock:
+        is_alive_mock.return_value = True
 
-        assert _request.service_is_readonly
+        with patch('django_replicated.dbchecker.is_writable') as is_writable_mock:
+            is_writable_mock.side_effect = is_writable
+
+            with mock_connections():
+                ReadOnlyMiddleware().process_request(_request)
+                assert _request.service_is_readonly
+
+            assert is_writable_mock.call_count == 1
+
+        assert is_alive_mock.call_count == 1
 
 
 def test_disable_manage_atomic_requests(_request):
