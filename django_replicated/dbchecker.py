@@ -40,8 +40,8 @@ def is_alive(connection):
             connection.connection.ping()
     else:
         log.debug('Get cursor for db: %s', connection.alias)
-        with connection.cursor():
-            pass
+        with connection.cursor() as cur:
+            cur.execute("SELECT 1")
 
     return True
 
