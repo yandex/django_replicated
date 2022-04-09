@@ -1,8 +1,5 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import pytest
-import mock
+from unittest import mock
 
 from django import db
 from django.db import models, router as django_router
@@ -18,13 +15,12 @@ pytestmark = pytest.mark.django_db
 def router():
     return ReplicationRouter()
 
+class _TestModel(models.Model):
+    class Meta:
+        app_label = 'django_replicated'
 
 @pytest.fixture
 def model():
-    class _TestModel(models.Model):
-        class Meta:
-            app_label = 'django_replicated'
-
     return _TestModel
 
 

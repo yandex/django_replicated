@@ -1,7 +1,5 @@
-# coding: utf-8
-
 import pytest
-from mock import patch
+from unittest.mock import patch
 
 from django.test import RequestFactory
 from django.test.utils import override_settings

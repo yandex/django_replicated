@@ -1,7 +1,4 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
-from django.conf.urls import url, include
+from django.urls import include, re_path
 from django.http import HttpResponseRedirect, HttpResponse
 from django.views.generic import View
 from django_replicated.utils import routers
@@ -61,18 +58,18 @@ def non_atomic_view(request):
 
 
 included_patterns = [
-    url(r'^with-namespace$', view, name='with-namespace'),
+    re_path(r'^with-namespace$', view, name='with-namespace'),
 ]
 
 urlpatterns = [
-    url(r'^$', view),
-    url(r'^admin/auth/$', TestView.as_view()),
-    url(r'^just_updated$', just_updated_view),
-    url(r'^with_name$', view, name='view-name'),
-    url(r'^as_class$', TestView.as_view()),
-    url(r'^as_callable$', TestCallable()),
-    url(r'^as_instancemethod$', instance_view.instancemethodview),
-    url(r'^non_atomic_view$', non_atomic_view),
-    url(r'^namespace/', include(included_patterns, 'namespace')),
+    re_path(r'^$', view),
+    re_path(r'^admin/auth/$', TestView.as_view()),
+    re_path(r'^just_updated$', just_updated_view),
+    re_path(r'^with_name$', view, name='view-name'),
+    re_path(r'^as_class$', TestView.as_view()),
+    re_path(r'^as_callable$', TestCallable()),
+    re_path(r'^as_instancemethod$', instance_view.instancemethodview),
+    re_path(r'^non_atomic_view$', non_atomic_view),
+    re_path(r'^namespace/', include((included_patterns, 'namespace'))),
 ]
 

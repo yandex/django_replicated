@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import pytest
 from django.conf import settings
 
@@ -10,7 +7,7 @@ pytestmark = pytest.mark.django_db
 
 
 def pytest_configure():
-    test_settings = replicated_settings.__dict__.copy()
+    test_settings = {k:v for k,v in replicated_settings.__dict__.items() if not k.startswith('__')}
     test_settings.update({
         'DATABASES': {
             'default': {'ENGINE': 'django.db.backends.sqlite3', 'ATOMIC_REQUESTS': True},

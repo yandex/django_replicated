@@ -1,7 +1,4 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
-from mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 from django.db import connections
 
@@ -25,6 +22,7 @@ def test_check_retry():
 
 
 def test_check_success_no_cache():
+    cache.clear()
     checker = MagicMock(return_value=True)
 
     with patch.object(cache, 'set') as cache_set_mock:
@@ -35,6 +33,7 @@ def test_check_success_no_cache():
 
 
 def test_check_fail_set_cache():
+    cache.clear()
     checker = MagicMock(return_value=False)
 
     with patch.object(cache, 'set') as cache_set_mock:
